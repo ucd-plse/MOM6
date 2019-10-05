@@ -38,12 +38,12 @@ contains
 !! sea water using the formulae given by  Wright, 1997, J. Atmos.
 !! Ocean. Tech., 14, 735-740.
 function wright_eos_2d(T,S,p) result(rho)
-  real(kind=8), dimension(:,:), intent(in) :: T,S !< temperature [degC] and Salinity [psu]
+  real, dimension(:,:), intent(in) :: T,S !< temperature [degC] and Salinity [psu]
   real, intent(in) :: p  !< pressure [Pa]
-  real(kind=8), dimension(size(T,1),size(T,2)) :: rho !< potential density [kg m-3]
+  real, dimension(size(T,1),size(T,2)) :: rho !< potential density [kg m-3]
   ! Local variables
-  real(kind=8) :: a0,a1,a2,b0,b1,b2,b3,b4,b5,c0,c1,c2,c3,c4,c5
-  real(kind=8) :: al0,lam,p0,I_denom
+  real :: a0,a1,a2,b0,b1,b2,b3,b4,b5,c0,c1,c2,c3,c4,c5
+  real :: al0,lam,p0,I_denom
   integer :: i,k
 
   a0 = 7.057924e-4; a1 = 3.480336e-7; a2 = -1.112733e-7
@@ -74,13 +74,13 @@ end function wright_eos_2d
 !! sea water using the formulae given by  Wright, 1997, J. Atmos.
 !! Ocean. Tech., 14, 735-740.
 function alpha_wright_eos_2d(T,S,p) result(drho_dT)
-  real(kind=8), dimension(:,:), intent(in) :: T,S !< temperature [degC] and Salinity [psu]
+  real, dimension(:,:), intent(in) :: T,S !< temperature [degC] and Salinity [psu]
   real, intent(in) :: p !< pressure [Pa]
-  real(kind=8), dimension(size(T,1),size(T,2)) :: drho_dT !< partial derivative of density with
+  real, dimension(size(T,1),size(T,2)) :: drho_dT !< partial derivative of density with
                                                           !! respect to temperature [kg m-3 degC-1]
   ! Local variables
-  real(kind=8) :: a0,a1,a2,b0,b1,b2,b3,b4,b5,c0,c1,c2,c3,c4,c5
-  real(kind=8) :: al0,lam,p0,I_denom,I_denom2
+  real :: a0,a1,a2,b0,b1,b2,b3,b4,b5,c0,c1,c2,c3,c4,c5
+  real :: al0,lam,p0,I_denom,I_denom2
   integer :: i,k
 
   a0 = 7.057924e-4; a1 = 3.480336e-7; a2 = -1.112733e-7
@@ -114,13 +114,13 @@ end function alpha_wright_eos_2d
 !! sea water using the formulae given by  Wright, 1997, J. Atmos.
 !! Ocean. Tech., 14, 735-740.
 function beta_wright_eos_2d(T,S,p) result(drho_dS)
-  real(kind=8), dimension(:,:), intent(in) :: T,S !< temperature [degC] and salinity [psu]
+  real, dimension(:,:), intent(in) :: T,S !< temperature [degC] and salinity [psu]
   real, intent(in) :: p !< pressure [Pa]
-  real(kind=8), dimension(size(T,1),size(T,2)) :: drho_dS !< partial derivative of density with
+  real, dimension(size(T,1),size(T,2)) :: drho_dS !< partial derivative of density with
                                                           !! respect to salinity [kg m-3 PSU-1]
   ! Local variables
-  real(kind=8) :: a0,a1,a2,b0,b1,b2,b3,b4,b5,c0,c1,c2,c3,c4,c5
-  real(kind=8) :: al0,lam,p0,I_denom,I_denom2
+  real :: a0,a1,a2,b0,b1,b2,b3,b4,b5,c0,c1,c2,c3,c4,c5
+  real :: al0,lam,p0,I_denom,I_denom2
   integer :: i,k
 
   a0 = 7.057924e-4; a1 = 3.480336e-7; a2 = -1.112733e-7
@@ -346,14 +346,14 @@ end function bisect_fast
 !> This subroutine determines the potential temperature and salinity that
 !! is consistent with the target density using provided initial guess
 subroutine determine_temperature(temp, salt, R, p_ref, niter, land_fill, h, k_start)
-  real(kind=8), dimension(:,:,:), intent(inout) :: temp !< potential temperature [degC]
-  real(kind=8), dimension(:,:,:), intent(inout) :: salt !< salinity [PSU]
-  real(kind=8), dimension(size(temp,3)), intent(in) :: R !< desired potential density [kg m-3].
+  real, dimension(:,:,:), intent(inout) :: temp !< potential temperature [degC]
+  real, dimension(:,:,:), intent(inout) :: salt !< salinity [PSU]
+  real, dimension(size(temp,3)), intent(in) :: R !< desired potential density [kg m-3].
   real, intent(in) :: p_ref !< reference pressure [Pa].
   integer, intent(in) :: niter !< maximum number of iterations
   integer, intent(in) :: k_start !< starting index (i.e. below the buffer layer)
   real, intent(in) :: land_fill !< land fill value
-  real(kind=8), dimension(:,:,:), intent(in) :: h !< layer thickness . Do not iterate for massless layers
+  real, dimension(:,:,:), intent(in) :: h !< layer thickness . Do not iterate for massless layers
 
   ! Local variables
   real, parameter :: T_max = 35.0, T_min = -2.0
@@ -374,9 +374,9 @@ subroutine determine_temperature(temp, salt, R, p_ref, niter, land_fill, h, k_st
   real, parameter :: T_max = 31.0, T_min = -2.0
 #endif
   ! Local variables (All of which need documentation!)
-  real(kind=8), dimension(size(temp,1),size(temp,3)) :: T, S, dT, dS, rho, hin
-  real(kind=8), dimension(size(temp,1),size(temp,3)) :: drho_dT, drho_dS
-  real(kind=8), dimension(size(temp,1)) :: press
+  real, dimension(size(temp,1),size(temp,3)) :: T, S, dT, dS, rho, hin
+  real, dimension(size(temp,1),size(temp,3)) :: drho_dT, drho_dS
+  real, dimension(size(temp,1)) :: press
   integer :: nx, ny, nz, nt, i, j, k, n, itt
   real    :: dT_dS
   logical :: adjust_salt, old_fit
