@@ -230,18 +230,18 @@ subroutine set_viscous_BBL(u, v, h, tv, visc, G, GV, US, CS, symmetrize)
                            ! L, or the error for the interface below [H ~> m or kg m-2].
   real :: Vol_quit         ! The volume error below which to quit iterating [H ~> m or kg m-2].
   real :: Vol_tol          ! A volume error tolerance [H ~> m or kg m-2].
-  real :: L(SZK_(G)+1)     ! The fraction of the full cell width that is open at
+  real (kind=8) :: L(SZK_(G)+1)     ! The fraction of the full cell width that is open at
                            ! the depth of each interface [nondim].
   real :: L_direct         ! The value of L above volume Vol_direct [nondim].
-  real :: L_max, L_min     ! Upper and lower bounds on the correct value for L  [nondim].
-  real :: Vol_err_max      ! The volume errors for the upper and lower bounds on
-  real :: Vol_err_min      ! the correct value for L [H ~> m or kg m-2].
-  real :: Vol_0            ! A deeper volume with known width L0 [H ~> m or kg m-2].
+  real (kind=8) :: L_max, L_min     ! Upper and lower bounds on the correct value for L  [nondim].
+  real (kind=8) :: Vol_err_max      ! The volume errors for the upper and lower bounds on
+  real (kind=8) :: Vol_err_min      ! the correct value for L [H ~> m or kg m-2].
+  real (kind=8) :: Vol_0            ! A deeper volume with known width L0 [H ~> m or kg m-2].
   real :: L0               ! The value of L above volume Vol_0 [nondim].
   real :: dVol             ! vol - Vol_0 [H ~> m or kg m-2].
   real :: dV_dL2           ! The partial derivative of volume with L squared
                            ! evaluated at L=L0 [H ~> m or kg m-2].
-  real :: h_neglect        ! A thickness that is so small it is usually lost
+  real (kind=8) :: h_neglect        ! A thickness that is so small it is usually lost
                            ! in roundoff and can be neglected [H ~> m or kg m-2].
   real :: ustH             ! ustar converted to units of H T-1 [H T-1 ~> m s-1 or kg m-2 s-1].
   real :: root             ! A temporary variable [H T-1 ~> m s-1 or kg m-2 s-1].

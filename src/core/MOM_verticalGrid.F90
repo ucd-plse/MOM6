@@ -44,7 +44,7 @@ type, public :: verticalGrid_type
   real :: Angstrom_H    !< A one-Angstrom thickness in the model thickness units [H ~> m or kg m-2].
   real :: Angstrom_Z    !< A one-Angstrom thickness in the model depth units [Z ~> m].
   real :: Angstrom_m    !< A one-Angstrom thickness [m].
-  real :: H_subroundoff !< A thickness that is so small that it can be added to a thickness of
+  real (kind=8) :: H_subroundoff !< A thickness that is so small that it can be added to a thickness of
                         !! Angstrom or larger without changing it at the bit level [H ~> m or kg m-2].
                         !! If Angstrom is 0 or exceedingly small, this is negligible compared to 1e-17 m.
   real, allocatable, dimension(:) :: &

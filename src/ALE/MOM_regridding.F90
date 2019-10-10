@@ -1615,7 +1615,7 @@ subroutine build_grid_SLight(G, GV, h, tv, dzInterface, CS)
       enddo
 
       call build_slight_column(CS%slight_CS, tv%eqn_of_state, GV%H_to_Pa, &
-                          GV%H_subroundoff, nz, depth, h(i, j, :), &
+                          real(GV%H_subroundoff, kind=4), nz, depth, h(i, j, :), &
                           tv%T(i, j, :), tv%S(i, j, :), p_col, z_col, z_col_new, &
                           h_neglect=h_neglect, h_neglect_edge=h_neglect_edge)
 
