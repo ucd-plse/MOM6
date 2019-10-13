@@ -1,13 +1,20 @@
+
 !> Solvers of linear systems.
 module regrid_solvers
 
 ! This file is part of MOM6. See LICENSE.md for the license.
 
 use MOM_error_handler, only : MOM_error, FATAL
+use mpp_mod, only: mpp_pe
 
 implicit none ; private
 
 public :: solve_linear_system, solve_tridiagonal_system
+
+interface solve_linear_system
+  module procedure solve_linear_system_r8
+  module procedure solve_linear_system_r4
+end interface
 
 contains
 
@@ -16,7 +23,125 @@ contains
 !! This routine uses Gauss's algorithm to transform the system's original
 !! matrix into an upper triangular matrix. Back substitution yields the answer.
 !! The matrix A must be square and its size must be that of the vectors B and X.
-subroutine solve_linear_system( A, B, X, system_size )
+subroutine solve_linear_system_r8( A, B, X, system_size )
+  real(kind=8), dimension(:,:), intent(inout) :: A  !< The matrix being inverted
+  real(kind=8), dimension(:),   intent(inout) :: B  !< system right-hand side
+  real(kind=8), dimension(:),   intent(inout) :: X  !< solution vector
+  integer, intent(in)                 :: system_size !< The size of the system
+  ! Local variables
+  integer               :: i, j, k
+  real(kind=8), parameter       :: eps = 0.0        ! Minimum pivot magnitude allowed
+  real(kind=8)                  :: factor
+  real(kind=8)                  :: pivot
+  real(kind=8)                  :: swap_a, swap_b
+  logical               :: found_pivot      ! boolean indicating whether
+                                            ! a pivot has been found
+  ! Loop on rows
+  do i = 1,system_size-1
+
+    found_pivot = .false.
+
+    ! Start to look for a pivot in row i. If the pivot
+    ! in row i -- which is the current row -- is not valid,
+    ! we keep looking for a valid pivot by searching the
+    ! entries of column i in rows below row i. Once a valid
+    ! pivot is found (say in row k), rows i and k are swaped.
+    k = i
+    do while ( ( .NOT. found_pivot ) .AND. ( k <= system_size ) )
+
+        if ( abs( A(k,i) ) > eps ) then  ! a valid pivot is found
+          found_pivot = .true.
+        else                                ! Go to the next row to see
+                                            ! if there is a valid pivot there
+          k = k + 1
+        endif
+
+    enddo ! end loop to find pivot
+
+    ! If no pivot could be found, the system is singular and we need
+    ! to end the execution
+    if ( .NOT. found_pivot ) then
+      !if (mpp_pe() .eq. 8) then
+
+      !  k = i
+      !  do while ( ( .NOT. found_pivot ) .AND. ( k <= system_size ) )
+
+      !      print *, "\tdebug", k,i, A(k,i), eps
+      !      if ( abs( A(k,i) ) > eps ) then  ! a valid pivot is found
+      !        found_pivot = .true.
+      !      else                                ! Go to the next row to see
+      !                                          ! if there is a valid pivot there
+      !        k = k + 1
+      !      endif
+
+      !  enddo ! end loop to find pivot
+
+      !  write(0,*) 'system_size',system_size
+      !  write(0,*) 'i,k',i,k
+      !  write(0,*) ' shape(A)=',shape(A)
+      !  write(0,*) ' A='
+      !  do k=1,system_size
+      !    print *, A(k,:)
+      !  enddo
+      !endif
+
+      call MOM_error( FATAL, 'The linear system is singular !' )
+    endif
+
+    ! If the pivot is in a row that is different than row i, that is if
+    ! k is different than i, we need to swap those two rows
+    if ( k /= i ) then
+      do j = 1,system_size
+        swap_a = A(i,j)
+        A(i,j) = A(k,j)
+        A(k,j) = swap_a
+      enddo
+      swap_b = B(i)
+      B(i) = B(k)
+      B(k) = swap_b
+    endif
+
+    ! Transform pivot to 1 by dividing the entire row
+    ! (right-hand side included) by the pivot
+    pivot = A(i,i)
+    do j = i,system_size
+      A(i,j) = A(i,j) / pivot
+    enddo
+    B(i) = B(i) / pivot
+
+    ! #INV: At this point, A(i,i) is a suitable pivot and it is equal to 1
+
+    ! Put zeros in column for all rows below that containing
+    ! pivot (which is row i)
+    do k = (i+1),system_size    ! k is the row index
+      factor = A(k,i)
+      do j = (i+1),system_size      ! j is the column index
+        A(k,j) = A(k,j) - factor * A(i,j)
+      enddo
+      B(k) = B(k) - factor * B(i)
+    enddo
+
+  enddo ! end loop on i
+
+
+  ! Solve system by back substituting
+  X(system_size) = B(system_size) / A(system_size,system_size)
+  do i = system_size-1,1,-1 ! loop on rows, starting from second to last row
+    X(i) = B(i)
+    do j = (i+1),system_size
+      X(i) = X(i) - A(i,j) * X(j)
+    enddo
+    X(i) = X(i) / A(i,i)
+  enddo
+
+end subroutine solve_linear_system_r8
+
+!> Solve the linear system AX = B by Gaussian elimination
+!!
+!! This routine uses Gauss's algorithm to transform the system's original
+!! matrix into an upper triangular matrix. Back substitution yields the answer.
+!! The matrix A must be square and its size must be that of the vectors B and X.
+subroutine solve_linear_system_r4( A, B, X, system_size )
   real, dimension(:,:), intent(inout) :: A  !< The matrix being inverted
   real, dimension(:),   intent(inout) :: B  !< system right-hand side
   real, dimension(:),   intent(inout) :: X  !< solution vector
@@ -104,8 +229,7 @@ subroutine solve_linear_system( A, B, X, system_size )
     X(i) = X(i) / A(i,i)
   enddo
 
-end subroutine solve_linear_system
-
+end subroutine solve_linear_system_r4
 !> Solve the tridiagonal system AX = B
 !!
 !! This routine uses Thomas's algorithm to solve the tridiagonal system AX = B.
