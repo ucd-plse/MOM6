@@ -64,11 +64,11 @@ end interface
 
 
 ! Following are the values for the reduced range formula.
-real, parameter :: a0 = 7.057924e-4, a1 = 3.480336e-7, a2 = -1.112733e-7 ! a0/a1 ~= 2028 ; a0/a2 ~= -6343
-real, parameter :: b0 = 5.790749e8,  b1 = 3.516535e6,  b2 = -4.002714e4  ! b0/b1 ~= 165  ; b0/b4 ~= 974
-real, parameter :: b3 = 2.084372e2,  b4 = 5.944068e5,  b5 = -9.643486e3
-real, parameter :: c0 = 1.704853e5,  c1 = 7.904722e2,  c2 = -7.984422    ! c0/c1 ~= 216  ; c0/c4 ~= -740
-real, parameter :: c3 = 5.140652e-2, c4 = -2.302158e2, c5 = -3.079464
+real(kind=8), parameter :: a0 = 7.057924e-4, a1 = 3.480336e-7, a2 = -1.112733e-7 ! a0/a1 ~= 2028 ; a0/a2 ~= -6343
+real(kind=8), parameter :: b0 = 5.790749e8,  b1 = 3.516535e6,  b2 = -4.002714e4  ! b0/b1 ~= 165  ; b0/b4 ~= 974
+real(kind=8), parameter :: b3 = 2.084372e2,  b4 = 5.944068e5,  b5 = -9.643486e3
+real(kind=8), parameter :: c0 = 1.704853e5,  c1 = 7.904722e2,  c2 = -7.984422    ! c0/c1 ~= 216  ; c0/c4 ~= -740
+real(kind=8), parameter :: c3 = 5.140652e-2, c4 = -2.302158e2, c5 = -3.079464
 !!@}
 
 contains
@@ -118,8 +118,8 @@ subroutine calculate_density_array_wright(T, S, pressure, rho, start, npts, rho_
 
   ! Original coded by R. Hallberg, 7/00, anomaly coded in 3/18.
   ! Local variables
-  real :: al0, p0, lambda
-  real :: al_TS, p_TSp, lam_TS, pa_000
+  real(kind=8) :: al0, p0, lambda
+  real(kind=8) :: al_TS, p_TSp, lam_TS, pa_000
   integer :: j
 
   if (present(rho_ref)) pa_000 = (b0*(1.0 - a0*rho_ref) - rho_ref*c0)
