@@ -483,7 +483,7 @@ subroutine tdma6(n, a, b, c, lam, y)
   real, dimension(n), intent(inout) :: y !< RHS on entry, result on exit
   ! Local variables
   integer :: k, l
-  real :: beta(n), yy(n), lambda
+  real(kind=8) :: beta(n), yy(n), lambda
   lambda = lam
   beta(1) = b(1) - lambda
   if (beta(1)==0.) then ! lam was chosen too perfectly
