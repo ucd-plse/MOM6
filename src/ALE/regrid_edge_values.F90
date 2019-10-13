@@ -26,11 +26,11 @@ public edge_values_implicit_h6
 ! to a small enough values such that the eigenvalues of the matrix can not
 ! be separated.
 !   Specifying a dimensional parameter value, as is done here, is a terrible idea.
-real, parameter :: hNeglect_edge_dflt = 1.e-10 !< The default value for cut-off minimum
-                                          !! thickness for sum(h) in edge value inversions
-real, parameter :: hNeglect_dflt = 1.e-30 !< The default value for cut-off minimum
-                                          !! thickness for sum(h) in other calculations
-real, parameter :: hMinFrac      = 1.e-5  !< A minimum fraction for min(h)/sum(h)
+real(kind=8), parameter :: hNeglect_edge_dflt = 1.e-10 !< The default value for cut-off minimum
+                                                  !! thickness for sum(h) in edge value inversions
+real(kind=8), parameter :: hNeglect_dflt = 1.e-30 !< The default value for cut-off minimum
+                                                  !! thickness for sum(h) in other calculations
+real(kind=8), parameter :: hMinFrac      = 1.e-5  !< A minimum fraction for min(h)/sum(h)
 
 contains
 
@@ -298,14 +298,14 @@ subroutine edge_values_explicit_h4( N, h, u, edge_val, h_neglect )
   real,       optional, intent(in)    :: h_neglect !< A negligibly small width
   ! Local variables
   integer               :: i, j
-  real                  :: u0, u1, u2, u3
-  real                  :: h0, h1, h2, h3
-  real                  :: f1, f2, f3       ! auxiliary variables
-  real                  :: e                ! edge value
-  real, dimension(5)    :: x                ! used to compute edge
-  real, dimension(4,4)  :: A                ! values near the boundaries
-  real, dimension(4)    :: B, C
-  real      :: hNeglect ! A negligible thicness in the same units as h.
+  real(kind=8)                  :: u0, u1, u2, u3
+  real(kind=8)                  :: h0, h1, h2, h3
+  real(kind=8)                  :: f1, f2, f3       ! auxiliary variables
+  real(kind=8)                  :: e                ! edge value
+  real(kind=8), dimension(5)    :: x                ! used to compute edge
+  real(kind=8), dimension(4,4)  :: A                ! values near the boundaries
+  real(kind=8), dimension(4)    :: B, C
+  real(kind=8)      :: hNeglect ! A negligible thicness in the same units as h.
 
   hNeglect = hNeglect_edge_dflt ; if (present(h_neglect)) hNeglect = h_neglect
 
@@ -384,10 +384,10 @@ subroutine edge_values_explicit_h4( N, h, u, edge_val, h_neglect )
   call solve_linear_system( A, B, C, 4 )
 
   ! First edge value
-  edge_val(1,1) = evaluation_polynomial( C, 4, x(1) )
+  edge_val(1,1) = evaluation_polynomial( real(C), 4, real(x(1)) )
 
   ! Second edge value
-  edge_val(1,2) = evaluation_polynomial( C, 4, x(2) )
+  edge_val(1,2) = evaluation_polynomial( real(C), 4, real(x(2)) )
   edge_val(2,1) = edge_val(1,2)
 
 #ifdef __DO_SAFETY_CHECKS__
@@ -422,10 +422,10 @@ subroutine edge_values_explicit_h4( N, h, u, edge_val, h_neglect )
   call solve_linear_system( A, B, C, 4 )
 
   ! Last edge value
-  edge_val(N,2) = evaluation_polynomial( C, 4, x(5) )
+  edge_val(N,2) = evaluation_polynomial( real(C), 4, real(x(5)) )
 
   ! Second to last edge value
-  edge_val(N,1) = evaluation_polynomial( C, 4, x(4) )
+  edge_val(N,1) = evaluation_polynomial( real(C), 4, real(x(4)) )
   edge_val(N-1,2) = edge_val(N,1)
 
 #ifdef __DO_SAFETY_CHECKS__
