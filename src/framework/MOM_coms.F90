@@ -25,8 +25,8 @@ public :: Set_PElist, Get_PElist
 ! This module provides interfaces to the non-domain-oriented communication subroutines.
 
 integer(kind=8), parameter :: prec=2_8**46 !< The precision of each integer.
-real, parameter :: r_prec=2.0**46  !< A real version of prec.
-real, parameter :: I_prec=1.0/(2.0**46) !< The inverse of prec.
+real(kind=8), parameter :: r_prec=2.0**46  !< A real version of prec.
+real(kind=8), parameter :: I_prec=1.0/(2.0**46) !< The inverse of prec.
 integer, parameter :: max_count_prec=2**(63-46)-1
                               !< The number of values that can be added together
                               !! with the current value of prec before there will
@@ -34,11 +34,11 @@ integer, parameter :: max_count_prec=2**(63-46)-1
 
 integer, parameter :: ni=6    !< The number of long integers to use to represent
                               !< a real number.
-real, parameter, dimension(ni) :: &
-  pr = (/ r_prec**2, r_prec, 1.0, 1.0/r_prec, 1.0/r_prec**2, 1.0/r_prec**3 /)
+real(kind=8), parameter, dimension(ni) :: &
+  pr = (/ r_prec**2, r_prec, 1.0_8, 1.0/r_prec, 1.0/r_prec**2, 1.0/r_prec**3 /)
     !< An array of the real precision of each of the integers
-real, parameter, dimension(ni) :: &
-  I_pr = (/ 1.0/r_prec**2, 1.0/r_prec, 1.0, r_prec, r_prec**2, r_prec**3 /)
+real(kind=8), parameter, dimension(ni) :: &
+  I_pr = (/ 1.0/r_prec**2, 1.0/r_prec, 1.0_8, r_prec, r_prec**2, r_prec**3 /)
     !< An array of the inverse of the real precision of each of the integers
 real, parameter :: max_efp_float = pr(1) * (2.**63 - 1.)
                               !< The largest float with an EFP representation.

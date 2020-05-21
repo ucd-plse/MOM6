@@ -1154,7 +1154,7 @@ subroutine pressure_gradient_ppm( CS, S_t, S_b, T_t, T_b, G, GV, tv, h, bdry_ext
       call edge_values_implicit_h4( GV%ke, hTmp, tmp, ppol_E, h_neglect=1.0e-10*GV%m_to_H, &
                                   answers_2018=CS%answers_2018 )
     else
-      call edge_values_implicit_h4( GV%ke, hTmp, tmp, ppol_E, h_neglect=GV%H_subroundoff, &
+      call edge_values_implicit_h4( GV%ke, hTmp, tmp, ppol_E, h_neglect=real(GV%H_subroundoff, kind=4), &
                                   answers_2018=CS%answers_2018 )
     endif
     call PPM_reconstruction( GV%ke, hTmp, tmp, ppol_E, ppol_coefs, h_neglect, &

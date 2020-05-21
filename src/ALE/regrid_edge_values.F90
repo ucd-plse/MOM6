@@ -23,11 +23,11 @@ public edge_slopes_implicit_h3, edge_slopes_implicit_h5
 ! to a small enough values such that the eigenvalues of the matrix can not
 ! be separated.
 !   Specifying a dimensional parameter value, as is done here, is a terrible idea.
-real, parameter :: hNeglect_edge_dflt = 1.e-10 !< The default value for cut-off minimum
-                                          !! thickness for sum(h) in edge value inversions
-real, parameter :: hNeglect_dflt = 1.e-30 !< The default value for cut-off minimum
-                                          !! thickness for sum(h) in other calculations
-real, parameter :: hMinFrac      = 1.e-5  !< A minimum fraction for min(h)/sum(h)
+real(kind=8), parameter :: hNeglect_edge_dflt = 1.e-10 !< The default value for cut-off minimum
+                                                  !! thickness for sum(h) in edge value inversions
+real(kind=8), parameter :: hNeglect_dflt = 1.e-30 !< The default value for cut-off minimum
+                                                  !! thickness for sum(h) in other calculations
+real(kind=8), parameter :: hMinFrac      = 1.e-5  !< A minimum fraction for min(h)/sum(h)
 
 contains
 

@@ -604,7 +604,7 @@ subroutine wave_speed(h, tv, G, GV, US, cg1, CS, full_halos, use_ebt_mode, mono_
             else
               call remapping_core_h(CS%remapping_CS, kc, Hc_H(:), mode_struct, &
                                     nz, h(i,j,:), modal_structure(i,j,:), &
-                                    GV%H_subroundoff, GV%H_subroundoff)
+                                    real(GV%H_subroundoff, kind=4), real(GV%H_subroundoff, kind=4))
             endif
           endif
         else
@@ -631,10 +631,9 @@ subroutine tdma6(n, a, b, c, lam, y)
   real, dimension(n), intent(inout) :: y !< RHS on entry, result on exit
   ! Local variables
   integer :: k, l
-  real :: beta(n), lambda  ! Temporary variables in [T2 L-2 ~> s2 m-2]
-  real :: I_beta(n)        ! Temporary variables in [L2 T-2 ~> m2 s-2]
-  real :: yy(n)            ! A temporary variable with the same units as y on entry.
-
+  real(kind=8) :: beta(n), lambda  ! Temporary variables in [T2 L-2 ~> s2 m-2]
+  real(kind=8) :: I_beta(n)        ! Temporary variables in [L2 T-2 ~> m2 s-2]
+  real(kind=8) :: yy(n)            ! A temporary variable with the same units as y on entry.
   lambda = lam
   beta(1) = b(1) - lambda
   if (beta(1)==0.) then ! lam was chosen too perfectly

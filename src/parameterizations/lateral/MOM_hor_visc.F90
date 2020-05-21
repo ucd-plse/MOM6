@@ -320,7 +320,7 @@ subroutine horizontal_viscosity(u, v, h, diffu, diffv, MEKE, VarMix, G, GV, US, 
                      ! points; these are first interpolated to u or v velocity
                      ! points where masks are applied [H ~> m or kg m-2].
   real :: h_neglect  ! thickness so small it can be lost in roundoff and so neglected [H ~> m or kg m-2]
-  real :: h_neglect3 ! h_neglect^3 [H3 ~> m3 or kg3 m-6]
+  real (kind=8) :: h_neglect3 ! h_neglect^3 [H3 ~> m3 or kg3 m-6]
   real :: hrat_min   ! minimum thicknesses at the 4 neighboring
                      ! velocity points divided by the thickness at the stress
                      ! point (h or q point) [nondim]
@@ -361,7 +361,7 @@ subroutine horizontal_viscosity(u, v, h, diffu, diffv, MEKE, VarMix, G, GV, US, 
   Isq = G%IscB ; Ieq = G%IecB ; Jsq = G%JscB ; Jeq = G%JecB
 
   h_neglect  = GV%H_subroundoff
-  h_neglect3 = h_neglect**3
+  h_neglect3 = real(h_neglect,kind=8)**3
   inv_PI3 = 1.0/((4.0*atan(1.0))**3)
   inv_PI2 = 1.0/((4.0*atan(1.0))**2)
   inv_PI6 = inv_PI3 * inv_PI3
@@ -1366,8 +1366,8 @@ subroutine hor_visc_init(Time, G, US, param_file, diag, CS, MEKE)
   type(hor_visc_CS), pointer             :: CS   !< Pointer to the control structure for this module
   type(MEKE_type), pointer               :: MEKE !< MEKE data
   ! Local variables
-  real, dimension(SZIB_(G),SZJ_(G)) :: u0u, u0v
-  real, dimension(SZI_(G),SZJB_(G)) :: v0u, v0v
+  real (kind=8), dimension(SZIB_(G),SZJ_(G)) :: u0u, u0v
+  real (kind=8), dimension(SZI_(G),SZJB_(G)) :: v0u, v0v
                 ! u0v is the Laplacian sensitivities to the v velocities
                 ! at u points [L-2 ~> m-2], with u0u, v0u, and v0v defined similarly.
   real :: grid_sp_h2       ! Harmonic mean of the squares of the grid [L2 ~> m2]
@@ -1393,7 +1393,7 @@ subroutine hor_visc_init(Time, G, US, param_file, diag, CS, MEKE)
   real :: Leith_bi_const   ! nondimensional biharmonic Leith constant
   real :: dt               ! The dynamics time step [T ~> s]
   real :: Idt              ! The inverse of dt [T-1 ~> s-1]
-  real :: denom            ! work variable; the denominator of a fraction
+  real(kind=8) :: denom            ! work variable; the denominator of a fraction
   real :: maxvel           ! largest permitted velocity components [m s-1]
   real :: bound_Cor_vel    ! grid-scale velocity variations at which value
                            ! the quadratically varying biharmonic viscosity

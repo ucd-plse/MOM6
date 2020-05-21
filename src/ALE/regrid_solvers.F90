@@ -1,13 +1,20 @@
+
 !> Solvers of linear systems.
 module regrid_solvers
 
 ! This file is part of MOM6. See LICENSE.md for the license.
 
 use MOM_error_handler, only : MOM_error, FATAL
+use mpp_mod, only: mpp_pe
 
 implicit none ; private
 
 public :: solve_linear_system, linear_solver, solve_tridiagonal_system, solve_diag_dominant_tridiag
+
+interface solve_linear_system
+  module procedure solve_linear_system_r8
+  module procedure solve_linear_system_r4
+end interface
 
 contains
 
@@ -16,7 +23,94 @@ contains
 !! This routine uses Gauss's algorithm to transform the system's original
 !! matrix into an upper triangular matrix. Back substitution yields the answer.
 !! The matrix A must be square, with the first index varing down the column.
-subroutine solve_linear_system( A, R, X, N, answers_2018 )
+subroutine solve_linear_system_r8( A, R, X, N, answers_2018 )
+  integer,              intent(in)    :: N  !< The size of the system
+  real(kind=8), dimension(N,N), intent(inout) :: A  !< The matrix being inverted [nondim]
+  real(kind=8), dimension(N),   intent(inout) :: R  !< system right-hand side [A]
+  real(kind=8), dimension(N),   intent(inout) :: X  !< solution vector [A]
+  logical,    optional, intent(in)    :: answers_2018 !< If true or absent use older, less efficient expressions.
+  ! Local variables
+  real(kind=8), parameter       :: eps = 0.0        ! Minimum pivot magnitude allowed
+  real(kind=8)    :: factor       ! The factor that eliminates the leading nonzero element in a row.
+  real(kind=8)    :: pivot, I_pivot ! The pivot value and its reciprocal [nondim]
+  real(kind=8)    :: swap_a, swap_b
+  logical :: found_pivot  ! If true, a pivot has been found
+  logical :: old_answers  ! If true, use expressions that give the original (2008 through 2018) MOM6 answers
+  integer :: i, j, k
+
+  old_answers = .true. ; if (present(answers_2018)) old_answers = answers_2018
+
+  ! Loop on rows to transform the problem into multiplication by an upper-right matrix.
+  do i = 1,N-1
+
+
+    ! Start to look for a pivot in the current row, i.  If the pivot in row i is not valid,
+    ! keep looking for a valid pivot by searching the entries of column i in rows below row i.
+    ! Once a valid pivot is found (say in row k), rows i and k are swaped.
+    found_pivot = .false.
+    k = i
+    do while ( ( .NOT. found_pivot ) .AND. ( k <= N ) )
+      if ( abs( A(k,i) ) > eps ) then  ! A valid pivot has been found
+        found_pivot = .true.
+      else                             ! Seek a valid pivot in the next row
+        k = k + 1
+      endif
+    enddo ! end loop to find pivot
+
+    ! If no pivot could be found, the system is singular.
+    if ( .NOT. found_pivot ) then
+      write(0,*) ' A=',A
+      call MOM_error( FATAL, 'The linear system is singular !' )
+    endif
+
+    ! If the pivot is in a row that is different than row i, that is if
+    ! k is different than i, we need to swap those two rows
+    if ( k /= i ) then
+      do j = 1,N
+        swap_a = A(i,j) ; A(i,j) = A(k,j) ; A(k,j) = swap_a
+      enddo
+      swap_b = R(i) ; R(i) = R(k) ; R(k) = swap_b
+    endif
+
+    ! Transform pivot to 1 by dividing the entire row (right-hand side included) by the pivot
+    if (old_answers) then
+      pivot = A(i,i)
+      do j = i,N ; A(i,j) = A(i,j) / pivot ; enddo
+      R(i) = R(i) / pivot
+    else
+      I_pivot = 1.0 / A(i,i)
+      A(i,i) = 1.0
+      do j = i+1,N ; A(i,j) = A(i,j) * I_pivot ; enddo
+      R(i) = R(i) * I_pivot
+    endif
+
+    ! #INV: At this point, A(i,i) is a suitable pivot and it is equal to 1
+
+    ! Put zeros in column for all rows below that contain the pivot (which is row i)
+    do k = i+1,N    ! k is the row index
+      factor = A(k,i)
+      ! A(k,i) = 0.0  ! These elements are not used again, so this line can be skipped for speed.
+      do j = i+1,N  ! j is the column index
+        A(k,j) = A(k,j) - factor * A(i,j)
+      enddo
+      R(k) = R(k) - factor * R(i)
+    enddo
+
+  enddo ! end loop on i
+
+  ! Solve system by back substituting in what is now an upper-right matrix.
+  X(N) = R(N) / A(N,N)  ! The last row is now trivially solved.
+  do i = N-1,1,-1 ! loop on rows, starting from second to last row
+    X(i) = R(i)
+    do j = i+1,N
+      X(i) = X(i) - A(i,j) * X(j)
+    enddo
+    if (old_answers) X(i) = X(i) / A(i,i)
+  enddo
+
+end subroutine solve_linear_system_r8
+
+subroutine solve_linear_system_r4( A, R, X, N, answers_2018 )
   integer,              intent(in)    :: N  !< The size of the system
   real, dimension(N,N), intent(inout) :: A  !< The matrix being inverted [nondim]
   real, dimension(N),   intent(inout) :: R  !< system right-hand side [A]
@@ -101,9 +195,8 @@ subroutine solve_linear_system( A, R, X, N, answers_2018 )
     if (old_answers) X(i) = X(i) / A(i,i)
   enddo
 
-end subroutine solve_linear_system
+end subroutine solve_linear_system_r4
 
-!> Solve the linear system AX = R by Gaussian elimination
 !!
 !! This routine uses Gauss's algorithm to transform the system's original
 !! matrix into an upper triangular matrix. Back substitution then yields the answer.

@@ -676,7 +676,7 @@ subroutine find_TKE_to_Kd(h, tv, dRho_int, N2_lay, j, dt, G, GV, US, CS, &
   real :: G_IRho0     ! Alternate calculation of G_Rho0 for reproducibility [Z T-2 R-1 ~> m4 s-2 kg-1]
   real :: I_Rho0      ! inverse of Boussinesq reference density [R-1 ~> m3 kg-1]
   real :: I_dt        ! 1/dt [T-1 ~> s-1]
-  real :: H_neglect   ! negligibly small thickness [H ~> m or kg m-2]
+  real (kind=8) :: H_neglect   ! negligibly small thickness [H ~> m or kg m-2]
   real :: hN2pO2      ! h (N^2 + Omega^2), in [Z T-2 ~> m s-2].
   logical :: do_i(SZI_(G))
 
