@@ -236,13 +236,13 @@ subroutine edge_values_explicit_h4( N, h, u, edge_val, h_neglect, answers_2018 )
   real :: I_h12                 ! The inverse of the sum of the two central thicknesses [H-1]
   real :: I_h012, I_h123        ! Inverses of sums of three succesive thicknesses [H-1]
   real :: I_den_et2, I_den_et3  ! Inverses of denominators in edge value terms [H-2]
-  real, dimension(5)    :: x          ! Coordinate system with 0 at edges [H]
-  real, dimension(4)    :: dz               ! A temporary array of limited layer thicknesses [H]
-  real, dimension(4)    :: u_tmp            ! A temporary array of cell average properties [A]
-  real, parameter       :: C1_12 = 1.0 / 12.0
-  real                  :: dx, xavg         ! Differences and averages of successive values of x [H]
-  real, dimension(4,4)  :: A                ! values near the boundaries
-  real, dimension(4)    :: B, C
+  real(kind=8), dimension(5)    :: x          ! Coordinate system with 0 at edges [H]
+  real(kind=8), dimension(4)    :: dz               ! A temporary array of limited layer thicknesses [H]
+  real(kind=8), dimension(4)    :: u_tmp            ! A temporary array of cell average properties [A]
+  real(kind=8), parameter       :: C1_12 = 1.0 / 12.0
+  real(kind=8)                  :: dx, xavg         ! Differences and averages of successive values of x [H]
+  real(kind=8), dimension(4,4)  :: A                ! values near the boundaries
+  real(kind=8), dimension(4)    :: B, C
   real      :: hNeglect ! A negligible thickness in the same units as h.
   integer               :: i, j
   logical   :: use_2018_answers  ! If true use older, less acccurate expressions.
@@ -314,11 +314,11 @@ subroutine edge_values_explicit_h4( N, h, u, edge_val, h_neglect, answers_2018 )
     call solve_linear_system( A, B, C, 4 )
 
     ! Set the edge values of the first cell
-    edge_val(1,1) = evaluation_polynomial( C, 4, x(1) )
-    edge_val(1,2) = evaluation_polynomial( C, 4, x(2) )
+    edge_val(1,1) = evaluation_polynomial( real(C), 4, real(x(1)) )
+    edge_val(1,2) = evaluation_polynomial( real(C), 4, real(x(2)) )
   else  ! Use expressions with less sensitivity to roundoff
     do i=1,4 ; dz(i) = max(hNeglect, h(i) ) ; u_tmp(i) = u(i) ; enddo
-    call end_value_h4(dz, u_tmp, C)
+    call end_value_h4_r8(dz, u_tmp, C)
 
     ! Set the edge values of the first cell
     edge_val(1,1) = C(1)
@@ -341,13 +341,13 @@ subroutine edge_values_explicit_h4( N, h, u, edge_val, h_neglect, answers_2018 )
     call solve_linear_system( A, B, C, 4 )
 
     ! Set the last and second to last edge values
-    edge_val(N,2) = evaluation_polynomial( C, 4, x(5) )
-    edge_val(N,1) = evaluation_polynomial( C, 4, x(4) )
+    edge_val(N,2) = evaluation_polynomial( real(C), 4, real(x(5)) )
+    edge_val(N,1) = evaluation_polynomial( real(C), 4, real(x(4)) )
   else
     ! Use expressions with less sensitivity to roundoff, including using a coordinate
     ! system that sets the origin at the last interface in the domain.
     do i=1,4 ; dz(i) = max(hNeglect, h(N+1-i) ) ; u_tmp(i) = u(N+1-i) ; enddo
-    call end_value_h4(dz, u_tmp, C)
+    call end_value_h4_r8(dz, u_tmp, C)
 
     ! Set the last and second to last edge values
     edge_val(N,2) = C(1)
@@ -662,6 +662,122 @@ subroutine end_value_h4(dz, u, Csys)
 !  enddo
 
 end subroutine end_value_h4
+subroutine end_value_h4_r8(dz, u, Csys)
+  real(kind=8), dimension(4), intent(in)  :: dz    !< The thicknesses of 4 layers, starting at the edge [H].
+                                           !! The values of dz must be positive.
+  real(kind=8), dimension(4), intent(in)  :: u     !< The average properties of 4 layers, starting at the edge [A]
+  real(kind=8), dimension(4), intent(out) :: Csys  !< The four coefficients of a 4th order polynomial fit
+                                           !! of u as a function of z [A H-(n-1)]
+
+  ! Local variables
+  real :: Wt(3,4)         ! The weights of successive u differences in the 4 closed form expressions.
+                          ! The units of Wt vary with the second index as [H-(n-1)].
+  real :: h1, h2, h3, h4  ! Copies of the layer thicknesses [H]
+  real :: h12, h23, h34   ! Sums of two successive thicknesses [H]
+  real :: h123, h234      ! Sums of three successive thicknesses [H]
+  real :: h1234           ! Sums of all four thicknesses [H]
+  ! real :: I_h1          ! The inverse of the a thickness [H-1]
+  real :: I_h12, I_h23, I_h34 ! The inverses of sums of two thicknesses [H-1]
+  real :: I_h123, I_h234  ! The inverse of the sum of three thicknesses [H-1]
+  real :: I_h1234         ! The inverse of the sum of all four thicknesses [H-1]
+  real :: I_denom         ! The inverse of the denominator some expressions [H-3]
+  real :: I_denB3         ! The inverse of the product of three sums of thicknesses [H-3]
+  real :: min_frac = 1.0e-6  ! The square of min_frac should be much larger than roundoff [nondim]
+  real, parameter :: C1_3 = 1.0 / 3.0
+  integer :: i, j, k
+
+  ! These are only used for code verification
+  ! real, dimension(4) :: Atest  ! The  coefficients of an expression that is being tested.
+  ! real :: zavg, u_mag, c_mag
+  ! character(len=128) :: mesg
+  ! real, parameter :: C1_12 = 1.0 / 12.0
+
+ ! if ((dz(1) == dz(2)) .and. (dz(1) == dz(3)) .and. (dz(1) == dz(4))) then
+ !   ! There are simple closed-form expressions in this case
+ !   I_h1 = 0.0 ; if (dz(1) > 0.0) I_h1 = 1.0 / dz(1)
+ !   Csys(1) = u(1) + (-13.0 * (u(2)-u(1)) + 10.0 * (u(3)-u(2)) - 3.0 * (u(4)-u(3))) * (0.25*C1_3)
+ !   Csys(2) = (35.0 * (u(2)-u(1)) - 34.0 * (u(3)-u(2)) + 11.0 * (u(4)-u(3))) * (0.25*C1_3 * I_h1)
+ !   Csys(3) = (-5.0 * (u(2)-u(1)) + 8.0 * (u(3)-u(2)) - 3.0 * (u(4)-u(3))) * (0.25 * I_h1**2)
+ !   Csys(4) = ((u(2)-u(1)) - 2.0 * (u(3)-u(2)) + (u(4)-u(3))) * (0.5*C1_3)
+ ! else
+
+  ! Express the coefficients as sums of the differences between properties of succesive layers.
+
+  h1 = dz(1) ; h2 = dz(2) ; h3 = dz(3) ; h4 = dz(4)
+  ! Some of the weights used below are proportional to (h1/(h2+h3))**2 or (h1/(h2+h3))*(h2/(h3+h4))
+  ! so h2 and h3 should be adjusted to ensure that these ratios are not so large that property
+  ! differences at the level of roundoff are amplified to be of order 1.
+  if ((h2+h3) < min_frac*h1) h3 = min_frac*h1 - h2
+  if ((h3+h4) < min_frac*h1) h4 = min_frac*h1 - h3
+
+  h12 = h1+h2 ; h23 = h2+h3 ; h34 = h3+h4
+  h123 = h12 + h3 ; h234 = h2 + h34 ; h1234 = h12 + h34
+  ! Find 3 reciprocals with a single division for efficiency.
+  I_denB3 = 1.0 / (h123 * h12 * h23)
+  I_h12 = (h123 * h23) * I_denB3
+  I_h23 = (h12 * h123) * I_denB3
+  I_h123 = (h12 * h23) * I_denB3
+  I_denom = 1.0 / ( h1234 * (h234 * h34) )
+  I_h34 = (h1234 * h234) * I_denom
+  I_h234 = (h1234 * h34) * I_denom
+  I_h1234 = (h234 * h34) * I_denom
+
+  ! Calculation coefficients in the four equations
+
+  ! The expressions for Csys(3) and Csys(4) come from reducing the 4x4 matrix problem into the following 2x2
+  ! matrix problem, then manipulating the analytic solution to avoid any subtraction and simplifying.
+  !  (C1_3 * h123 * h23) * Csys(3) + (0.25 * h123 * h23 * (h3 + 2.0*h2 + 3.0*h1)) * Csys(4) =
+  !            (u(3)-u(1)) - (u(2)-u(1)) * (h12 + h23) * I_h12
+  !  (C1_3 * ((h23 + h34) * h1234 + h23 * h3)) * Csys(3) +
+  !  (0.25 * ((h1234 + h123 + h12 + h1) * h23 * h3 + (h1234 + h12 + h1) * (h23 + h34) * h1234)) * Csys(4) =
+  !            (u(4)-u(1)) - (u(2)-u(1)) * (h123 + h234) * I_h12
+  ! The final expressions for Csys(1) and Csys(2) were derived by algebraically manipulating the following expressions:
+  !  Csys(1) = (C1_3 * h1 * h12 * Csys(3) + 0.25 * h1 * h12 * (2.0*h1+h2) * Csys(4)) - &
+  !            (h1*I_h12)*(u(2)-u(1)) + u(1)
+  !  Csys(2) = (-2.0*C1_3 * (2.0*h1+h2) * Csys(3) - 0.5 * (h1**2 + h12 * (2.0*h1+h2)) * Csys(4)) + &
+  !            2.0*I_h12 * (u(2)-u(1))
+  ! These expressions are typically evaluated at x=0 and x=h1, so it is important that these are well behaved
+  ! for these values, suggesting that h1/h23 and h1/h34 should not be allowed to be too large.
+
+  Wt(1,1) = -h1 * (I_h1234 + I_h123 + I_h12)                              ! > -3
+  Wt(2,1) =  h1 * h12 * ( I_h234 * I_h1234 + I_h23 * (I_h234 + I_h123) )  ! < (h1/h234) + (h1/h23)*(2+(h1/h234))
+  Wt(3,1) = -h1 * h12 * h123 * I_denom                                    ! > -(h1/h34)*(1+(h1/h234))
+
+  Wt(1,2) =  2.0 * (I_h12*(1.0 + (h1+h12) * (I_h1234 + I_h123)) + h1 * I_h1234*I_h123) ! < 10/h12
+  Wt(2,2) = -2.0 * ((h1 * h12 * I_h1234) *       (I_h23 * (I_h234 + I_h123)) + &       ! > -(10+6*(h1/h234))/h23
+                    (h1+h12) * ( I_h1234*I_h234 + I_h23 * (I_h234 + I_h123) ) )
+  Wt(3,2) =  2.0 * ((h1+h12) * h123 + h1*h12 ) * I_denom                               ! < (2+(6*h1/h234)) / h34
+
+  Wt(1,3) = -3.0 * I_h12 * I_h123* ( 1.0 + I_h1234 * ((h1+h12)+h123) )                 ! > -12 / (h12*h123)
+  Wt(2,3) =  3.0 * I_h23 * ( I_h123 + I_h1234 * ((h1+h12)+h123) * (I_h123 + I_h234) )  ! < 12 / (h23^2)
+  Wt(3,3) = -3.0 * ((h1+h12)+h123) * I_denom                                           ! > -9 / (h234*h23)
+
+  Wt(1,4) =  4.0 * I_h1234 * I_h123 * I_h12                          ! Wt*h1^3 < 4
+  Wt(2,4) = -4.0 * I_h1234 * (I_h23 * (I_h123 + I_h234))             ! Wt*h1^3 > -4* (h1/h23)*(1+h1/h234)
+  Wt(3,4) =  4.0 * I_denom  ! = 4.0*I_h1234 * I_h234 * I_h34         ! Wt*h1^3 < 4 * (h1/h234)*(h1/h34)
+
+  Csys(1) = ((u(1) + Wt(1,1) * (u(2)-u(1))) + Wt(2,1) * (u(3)-u(2))) + Wt(3,1) * (u(4)-u(3))
+  Csys(2) = (Wt(1,2) * (u(2)-u(1)) + Wt(2,2) * (u(3)-u(2))) + Wt(3,2) * (u(4)-u(3))
+  Csys(3) = (Wt(1,3) * (u(2)-u(1)) + Wt(2,3) * (u(3)-u(2))) + Wt(3,3) * (u(4)-u(3))
+  Csys(4) = (Wt(1,4) * (u(2)-u(1)) + Wt(2,4) * (u(3)-u(2))) + Wt(3,4) * (u(4)-u(3))
+
+  ! endif ! End of non-uniform layer thickness branch.
+
+  ! To verify that these answers are correct, uncomment the following:
+!  u_mag = 0.0 ; do i=1,4 ; u_mag = max(u_mag, abs(u(i))) ; enddo
+!  do i = 1,4
+!    if (i==1) then ; zavg = 0.5*dz(i) ; else ; zavg = zavg + 0.5*(dz(i-1)+dz(i)) ; endif
+!    Atest(1) = 1.0
+!    Atest(2) = zavg                             ! = ( (z(i+1)**2) - (z(i)**2) ) / (2*dz(i))
+!    Atest(3) = (zavg**2 + 0.25*C1_3*dz(i)**2)   ! = ( (z(i+1)**3) - (z(i)**3) ) / (3*dz(i))
+!    Atest(4) = zavg * (zavg**2 + 0.25*dz(i)**2) ! = ( (z(i+1)**4) - (z(i)**4) ) / (4*dz(i))
+!    c_mag = 1.0 ; do k=0,3 ; do j=1,3 ; c_mag = c_mag + abs(Wt(j,k+1) * zavg**k) ; enddo ; enddo
+!    write(mesg, '("end_value_h4 line ", i2, " c_mag = ", es10.2, " u_mag = ", es10.2)') i, c_mag, u_mag
+!    call test_line(mesg, 4, Atest, Csys, u(i), u_mag*c_mag, tol=1.0e-15)
+!  enddo
+
+end subroutine end_value_h4_r8
+
 
 
 !------------------------------------------------------------------------------
