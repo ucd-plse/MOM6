@@ -6,8 +6,8 @@ module MOM_file_parser
 use MOM_coms, only : root_PE, broadcast
 use MOM_error_handler, only : MOM_error, FATAL, WARNING, MOM_mesg
 use MOM_error_handler, only : is_root_pe, stdlog, stdout
-use MOM_time_manager, only : get_time, time_type, get_ticks_per_second
-use MOM_time_manager, only : set_date, get_date, real_to_time, operator(-), set_time
+use MOM_time_manager!, only : get_time, time_type, get_ticks_per_second
+!use MOM_time_manager, only : set_date, get_date, real_to_time, operator(-), set_time
 use MOM_document, only : doc_param, doc_module, doc_init, doc_end, doc_type
 use MOM_document, only : doc_openBlock, doc_closeBlock
 use MOM_string_functions, only : left_int, left_ints, slasher
@@ -176,7 +176,7 @@ subroutine open_param_file(filename, CS, checkable, component, doc_file_dir)
   if (all_PEs_read .or. is_root_pe()) then
     ! Find an unused unit number.
     do iounit=10,512
-      INQUIRE(iounit,OPENED=unit_in_use) ; if (.not.unit_in_use) exit
+      INQUIRE(unit=iounit,OPENED=unit_in_use) ; if (.not.unit_in_use) exit
     enddo
     if (iounit >= 512) call MOM_error(FATAL, &
         "open_param_file: No unused file unit could be found.")

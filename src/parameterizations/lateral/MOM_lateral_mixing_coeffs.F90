@@ -8,7 +8,7 @@ use MOM_error_handler, only : MOM_error, FATAL, WARNING, MOM_mesg
 use MOM_diag_mediator, only : register_diag_field, safe_alloc_ptr, post_data
 use MOM_diag_mediator, only : diag_ctrl, time_type, query_averaging_enabled
 use MOM_domains,       only : create_group_pass, do_group_pass
-use MOM_domains,       only : group_pass_type, pass_var, pass_vector
+use MOM_domains,       only : mpp_group_update_type, pass_var, pass_vector
 use MOM_file_parser, only : get_param, log_version, param_file_type
 use MOM_interface_heights, only : find_eta
 use MOM_isopycnal_slopes, only : calc_isoneutral_slopes
@@ -142,7 +142,7 @@ type, public :: VarMix_CS
   !>@}
 
   type(wave_speed_CS), pointer :: wave_speed_CSp => NULL() !< Wave speed control structure
-  type(group_pass_type) :: pass_cg1 !< For group halo pass
+  type(mpp_group_update_type) :: pass_cg1 !< For group halo pass
   logical :: debug      !< If true, write out checksums of data for debugging
 end type VarMix_CS
 

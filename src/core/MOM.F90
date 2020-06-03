@@ -27,7 +27,7 @@ use MOM_domains,              only : MOM_domains_init, clone_MOM_domain
 use MOM_domains,              only : sum_across_PEs, pass_var, pass_vector
 use MOM_domains,              only : To_North, To_East, To_South, To_West
 use MOM_domains,              only : To_All, Omit_corners, CGRID_NE, SCALAR_PAIR
-use MOM_domains,              only : create_group_pass, do_group_pass, group_pass_type
+use MOM_domains,              only : create_group_pass, do_group_pass, mpp_group_update_type
 use MOM_domains,              only : start_group_pass, complete_group_pass, Omit_Corners
 use MOM_error_handler,        only : MOM_error, MOM_mesg, FATAL, WARNING, is_root_pe
 use MOM_error_handler,        only : MOM_set_verbosity, callTree_showQuery
@@ -494,7 +494,7 @@ subroutine step_MOM(forces_in, fluxes_in, sfc_state, Time_start, time_int_in, CS
   real :: I_wt_ssh  ! The inverse of the time weights [T-1 ~> s-1]
 
   type(time_type) :: Time_local, end_time_thermo, Time_temp
-  type(group_pass_type) :: pass_tau_ustar_psurf
+  type(mpp_group_update_type) :: pass_tau_ustar_psurf
   logical :: showCallTree
 
   ! External forcing fields on the model index map
@@ -1135,7 +1135,7 @@ subroutine step_MOM_tracer_dyn(CS, G, GV, US, h, Time_local)
                             intent(in)    :: h      !< layer thicknesses after the transports [H ~> m or kg m-2]
   type(time_type),          intent(in)    :: Time_local !< The model time at the end
                                                     !! of the time step.
-  type(group_pass_type) :: pass_T_S
+  type(mpp_group_update_type) :: pass_T_S
   logical :: showCallTree
   showCallTree = callTree_showQuery()
 
@@ -1221,7 +1221,7 @@ subroutine step_MOM_thermo(CS, G, GV, US, u, v, h, tv, fluxes, dtdia, &
 
   logical :: use_ice_shelf ! Needed for selecting the right ALE interface.
   logical :: showCallTree
-  type(group_pass_type) :: pass_T_S, pass_T_S_h, pass_uv_T_S_h
+  type(mpp_group_update_type) :: pass_T_S, pass_T_S_h, pass_uv_T_S_h
   integer :: dynamics_stencil  ! The computational stencil for the calculations
                                ! in the dynamic core.
   integer :: i, j, k, is, ie, js, je, nz! , Isq, Ieq, Jsq, Jeq, n
@@ -1630,7 +1630,7 @@ subroutine initialize_MOM(Time, Time_init, param_file, dirs, CS, restart_CSp, &
   real, dimension(:,:), allocatable, target  :: frac_shelf_h ! fraction of total area occupied by ice shelf [nondim]
   real, dimension(:,:), pointer :: shelf_area => NULL()
   type(MOM_restart_CS),  pointer      :: restart_CSp_tmp => NULL()
-  type(group_pass_type) :: tmp_pass_uv_T_S_h, pass_uv_T_S_h
+  type(mpp_group_update_type) :: tmp_pass_uv_T_S_h, pass_uv_T_S_h
 
   real    :: default_val       ! default value for a parameter
   logical :: write_geom_files  ! If true, write out the grid geometry files.

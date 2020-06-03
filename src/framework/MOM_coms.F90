@@ -12,15 +12,15 @@ use mpp_mod, only : Set_PElist => mpp_set_current_pelist, Get_PElist => mpp_get_
 use mpp_mod, only : broadcast => mpp_broadcast
 use mpp_mod, only : sum_across_PEs => mpp_sum, max_across_PEs => mpp_max, min_across_PEs => mpp_min
 
-implicit none ; private
+implicit none! ; private
 
-public :: PE_here, root_PE, num_PEs, MOM_infra_init, MOM_infra_end
-public :: broadcast, sum_across_PEs, min_across_PEs, max_across_PEs
-public :: reproducing_sum, reproducing_sum_EFP, EFP_sum_across_PEs, EFP_list_sum_across_PEs
-public :: EFP_plus, EFP_minus, EFP_to_real, real_to_EFP, EFP_real_diff
-public :: operator(+), operator(-), assignment(=)
-public :: query_EFP_overflow_error, reset_EFP_overflow_error
-public :: Set_PElist, Get_PElist
+!public :: PE_here, root_PE, num_PEs, MOM_infra_init, MOM_infra_end
+!public :: broadcast, sum_across_PEs, min_across_PEs, max_across_PEs
+!public :: reproducing_sum, reproducing_sum_EFP, EFP_sum_across_PEs, EFP_list_sum_across_PEs
+!public :: EFP_plus, EFP_minus, EFP_to_real, real_to_EFP, EFP_real_diff
+!public :: operator(+), operator(-), assignment(=)
+!public :: query_EFP_overflow_error, reset_EFP_overflow_error
+!public :: Set_PElist, Get_PElist
 
 ! This module provides interfaces to the non-domain-oriented communication subroutines.
 
@@ -48,6 +48,8 @@ real, parameter :: max_efp_float = pr(1) * (2.**63 - 1.)
 logical :: overflow_error = .false. !< This becomes true if an overflow is encountered.
 logical :: NaN_error = .false.      !< This becomes true if a NaN is encountered.
 logical :: debug = .false.          !< Making this true enables debugging output.
+
+private :: prec, r_prec, I_prec, max_count_prec, ni, pr, I_pr, max_efp_float, overflow_error, NaN_error, debug
 
 !> Find an accurate and order-invariant sum of a distributed 2d or 3d field
 interface reproducing_sum

@@ -13,7 +13,7 @@ use MOM_diag_mediator,     only : diag_ctrl, time_type, safe_alloc_ptr
 use MOM_diag_mediator,     only : diag_get_volume_cell_measure_dm_id
 use MOM_diag_mediator,     only : diag_grid_storage
 use MOM_diag_mediator,     only : diag_save_grids, diag_restore_grids, diag_copy_storage_to_diag
-use MOM_domains,           only : create_group_pass, do_group_pass, group_pass_type
+use MOM_domains,           only : create_group_pass, do_group_pass, mpp_group_update_type
 use MOM_domains,           only : To_North, To_East
 use MOM_EOS,               only : calculate_density, int_density_dz, EOS_domain
 use MOM_EOS,               only : gsw_sp_from_sr, gsw_pt_from_ct
@@ -148,7 +148,7 @@ type, public :: diagnostics_CS ; private
   integer   :: nlay(MAX_FIELDS_) !< The number of layers in each diagnostics
   integer   :: num_time_deriv = 0 !< The number of time derivative diagnostics
 
-  type(group_pass_type) :: pass_KE_uv !< A handle used for group halo passes
+  type(mpp_group_update_type) :: pass_KE_uv !< A handle used for group halo passes
 
 end type diagnostics_CS
 

@@ -21,7 +21,7 @@ use mpp_domains_mod, only : global_field_sum => mpp_global_sum
 use mpp_domains_mod, only : mpp_update_domains, CYCLIC_GLOBAL_DOMAIN, FOLD_NORTH_EDGE
 use mpp_domains_mod, only : mpp_start_update_domains, mpp_complete_update_domains
 use mpp_domains_mod, only : mpp_create_group_update, mpp_do_group_update
-use mpp_domains_mod, only : group_pass_type => mpp_group_update_type
+use mpp_domains_mod, only : mpp_group_update_type
 use mpp_domains_mod, only : mpp_reset_group_update_field
 use mpp_domains_mod, only : mpp_group_update_initialized
 use mpp_domains_mod, only : mpp_start_group_update, mpp_complete_group_update
@@ -41,7 +41,7 @@ public :: pass_vector_start, pass_vector_complete
 public :: global_field_sum, sum_across_PEs, min_across_PEs, max_across_PEs
 public :: AGRID, BGRID_NE, CGRID_NE, SCALAR_PAIR, BITWISE_EXACT_SUM, CORNER, CENTER
 public :: To_East, To_West, To_North, To_South, To_All, Omit_Corners
-public :: create_group_pass, do_group_pass, group_pass_type
+public :: create_group_pass, do_group_pass, mpp_group_update_type
 public :: start_group_pass, complete_group_pass
 public :: compute_block_extent, get_global_shape
 public :: get_simple_array_i_ind, get_simple_array_j_ind
@@ -886,7 +886,7 @@ end subroutine pass_vector_complete_3d
 !> create_var_group_pass_2d sets up a group of two-dimensional array halo updates.
 subroutine create_var_group_pass_2d(group, array, MOM_dom, sideflag, position, &
                                     halo, clock)
-  type(group_pass_type),  intent(inout) :: group    !< The data type that store information for
+  type(mpp_group_update_type),  intent(inout) :: group    !< The data type that store information for
                                                     !! group update. This data will be used in
                                                     !! do_group_pass.
   real, dimension(:,:),   intent(inout) :: array    !< The array which is having its halos points
@@ -931,7 +931,7 @@ end subroutine create_var_group_pass_2d
 !> create_var_group_pass_3d sets up a group of three-dimensional array halo updates.
 subroutine create_var_group_pass_3d(group, array, MOM_dom, sideflag, position, halo, &
                                     clock)
-  type(group_pass_type),  intent(inout) :: group    !< The data type that store information for
+  type(mpp_group_update_type),  intent(inout) :: group    !< The data type that store information for
                                                     !! group update. This data will be used in
                                                     !! do_group_pass.
   real, dimension(:,:,:), intent(inout) :: array    !< The array which is having its halos points
@@ -976,7 +976,7 @@ end subroutine create_var_group_pass_3d
 !> create_vector_group_pass_2d sets up a group of two-dimensional vector halo updates.
 subroutine create_vector_group_pass_2d(group, u_cmpt, v_cmpt, MOM_dom, direction, stagger, halo, &
                                        clock)
-  type(group_pass_type),  intent(inout) :: group    !< The data type that store information for
+  type(mpp_group_update_type),  intent(inout) :: group    !< The data type that store information for
                                                     !! group update. This data will be used in
                                                     !! do_group_pass.
   real, dimension(:,:),   intent(inout) :: u_cmpt   !< The nominal zonal (u) component of the vector
@@ -1032,7 +1032,7 @@ end subroutine create_vector_group_pass_2d
 !> create_vector_group_pass_3d sets up a group of three-dimensional vector halo updates.
 subroutine create_vector_group_pass_3d(group, u_cmpt, v_cmpt, MOM_dom, direction, stagger, halo, &
                                        clock)
-  type(group_pass_type),  intent(inout) :: group    !< The data type that store information for
+  type(mpp_group_update_type),  intent(inout) :: group    !< The data type that store information for
                                                     !! group update. This data will be used in
                                                     !! do_group_pass.
   real, dimension(:,:,:), intent(inout) :: u_cmpt   !< The nominal zonal (u) component of the vector
@@ -1088,7 +1088,7 @@ end subroutine create_vector_group_pass_3d
 
 !> do_group_pass carries out a group halo update.
 subroutine do_group_pass(group, MOM_dom, clock)
-  type(group_pass_type), intent(inout) :: group     !< The data type that store information for
+  type(mpp_group_update_type), intent(inout) :: group     !< The data type that store information for
                                                     !! group update. This data will be used in
                                                     !! do_group_pass.
   type(MOM_domain_type), intent(inout) :: MOM_dom   !< The MOM_domain_type containing the mpp_domain
@@ -1108,7 +1108,7 @@ end subroutine do_group_pass
 
 !> start_group_pass starts out a group halo update.
 subroutine start_group_pass(group, MOM_dom, clock)
-  type(group_pass_type), intent(inout) :: group    !< The data type that store information for
+  type(mpp_group_update_type), intent(inout) :: group    !< The data type that store information for
                                                    !! group update. This data will be used in
                                                    !! do_group_pass.
   type(MOM_domain_type), intent(inout) :: MOM_dom  !< The MOM_domain_type containing the mpp_domain
@@ -1129,7 +1129,7 @@ end subroutine start_group_pass
 
 !> complete_group_pass completes a group halo update.
 subroutine complete_group_pass(group, MOM_dom, clock)
-  type(group_pass_type), intent(inout) :: group    !< The data type that store information for
+  type(mpp_group_update_type), intent(inout) :: group    !< The data type that store information for
                                                    !! group update. This data will be used in
                                                    !! do_group_pass.
   type(MOM_domain_type), intent(inout) :: MOM_dom  !< The MOM_domain_type containing the mpp_domain

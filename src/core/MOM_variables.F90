@@ -4,7 +4,7 @@ module MOM_variables
 ! This file is part of MOM6. See LICENSE.md for the license.
 
 use MOM_array_transform, only : rotate_array, rotate_vector
-use MOM_domains, only : MOM_domain_type, get_domain_extent, group_pass_type
+use MOM_domains, only : MOM_domain_type, get_domain_extent, mpp_group_update_type
 use MOM_debugging, only : hchksum
 use MOM_error_handler, only : MOM_error, FATAL
 use MOM_grid, only : ocean_grid_type
@@ -288,8 +288,8 @@ type, public :: BT_cont_type
                                     !! open face area is FA_v_NN.  vBT_NN must be non-positive.
   real, allocatable :: h_u(:,:,:)   !< An effective thickness at zonal faces [H ~> m or kg m-2].
   real, allocatable :: h_v(:,:,:)   !< An effective thickness at meridional faces [H ~> m or kg m-2].
-  type(group_pass_type) :: pass_polarity_BT !< Structure for polarity group halo updates
-  type(group_pass_type) :: pass_FA_uv !< Structure for face area group halo updates
+  type(mpp_group_update_type) :: pass_polarity_BT !< Structure for polarity group halo updates
+  type(mpp_group_update_type) :: pass_FA_uv !< Structure for face area group halo updates
 end type BT_cont_type
 
 contains

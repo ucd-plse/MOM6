@@ -19,7 +19,7 @@ use MOM_diag_mediator,     only : set_diag_mediator_grid, diag_ctrl, diag_update
 use MOM_domains,           only : MOM_domains_init
 use MOM_domains,           only : To_South, To_West, To_All, CGRID_NE, SCALAR_PAIR
 use MOM_domains,           only : To_North, To_East, Omit_Corners
-use MOM_domains,           only : create_group_pass, do_group_pass, group_pass_type
+use MOM_domains,           only : create_group_pass, do_group_pass, mpp_group_update_type
 use MOM_domains,           only : start_group_pass, complete_group_pass, pass_var
 use MOM_debugging,         only : hchksum, uvchksum
 use MOM_error_handler,     only : MOM_error, MOM_mesg, FATAL, WARNING, is_root_pe
@@ -206,13 +206,13 @@ type, public :: MOM_dyn_split_RK2_CS ; private
   !> A pointer to the update_OBC control structure
   type(update_OBC_CS),    pointer :: update_OBC_CSp => NULL()
 
-  type(group_pass_type) :: pass_eta  !< Structure for group halo pass
-  type(group_pass_type) :: pass_visc_rem  !< Structure for group halo pass
-  type(group_pass_type) :: pass_uvp  !< Structure for group halo pass
-  type(group_pass_type) :: pass_hp_uv  !< Structure for group halo pass
-  type(group_pass_type) :: pass_uv  !< Structure for group halo pass
-  type(group_pass_type) :: pass_h  !< Structure for group halo pass
-  type(group_pass_type) :: pass_av_uvh  !< Structure for group halo pass
+  type(mpp_group_update_type) :: pass_eta  !< Structure for group halo pass
+  type(mpp_group_update_type) :: pass_visc_rem  !< Structure for group halo pass
+  type(mpp_group_update_type) :: pass_uvp  !< Structure for group halo pass
+  type(mpp_group_update_type) :: pass_hp_uv  !< Structure for group halo pass
+  type(mpp_group_update_type) :: pass_uv  !< Structure for group halo pass
+  type(mpp_group_update_type) :: pass_h  !< Structure for group halo pass
+  type(mpp_group_update_type) :: pass_av_uvh  !< Structure for group halo pass
 
 end type MOM_dyn_split_RK2_CS
 
@@ -1007,7 +1007,7 @@ subroutine initialize_dyn_split_RK2(u, v, h, uh, vh, eta, Time, G, GV, US, param
   real :: accel_rescale ! A rescaling factor for accelerations from the representation in
                      ! a restart file to the internal representation in this run.
   real :: H_convert
-  type(group_pass_type) :: pass_av_h_uvh
+  type(mpp_group_update_type) :: pass_av_h_uvh
   logical :: use_tides, debug_truncations
 
   integer :: i, j, k, is, ie, js, je, isd, ied, jsd, jed, nz

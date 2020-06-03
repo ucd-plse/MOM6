@@ -14,9 +14,9 @@ use MOM_debugging,        only : check_column_integrals
 use MOM_diag_mediator,    only : register_diag_field, post_data, diag_ctrl
 use MOM_diag_mediator,    only : time_type, diag_update_remap_grids
 use MOM_diag_vkernels,    only : interpolate_column, reintegrate_column
-use MOM_domains,          only : create_group_pass, do_group_pass, group_pass_type
+use MOM_domains,          only : create_group_pass, do_group_pass, mpp_group_update_type
 use MOM_EOS,              only : calculate_density
-use MOM_domains,          only : create_group_pass, do_group_pass, group_pass_type
+use MOM_domains,          only : create_group_pass, do_group_pass, mpp_group_update_type
 use MOM_error_handler,    only : MOM_error, FATAL, WARNING
 use MOM_error_handler,    only : callTree_showQuery
 use MOM_error_handler,    only : callTree_enter, callTree_leave, callTree_waypoint
@@ -679,7 +679,7 @@ subroutine ALE_regrid_accelerated(CS, G, GV, h, tv, n, u, v, OBC, Reg, dt, dzReg
   ! Local variables
   integer :: i, j, k, nz
   type(thermo_var_ptrs) :: tv_local ! local/intermediate temp/salt
-  type(group_pass_type) :: pass_T_S_h ! group pass if the coordinate has a stencil
+  type(mpp_group_update_type) :: pass_T_S_h ! group pass if the coordinate has a stencil
   real, dimension(SZI_(G),SZJ_(G),SZK_(GV))         :: h_loc, h_orig ! A working copy of layer thicknesses
   real, dimension(SZI_(G),SZJ_(G),SZK_(GV)), target :: T, S ! local temporary state
   ! we have to keep track of the total dzInterface if for some reason

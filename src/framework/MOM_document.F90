@@ -4,7 +4,7 @@ module MOM_document
 
 ! This file is part of MOM6. See LICENSE.md for the license.
 
-use MOM_time_manager,  only : time_type, operator(==), get_time, get_ticks_per_second
+use MOM_time_manager!,  only : time_type, operator(==), get_time, get_ticks_per_second
 use MOM_error_handler, only : MOM_error, FATAL, WARNING, is_root_pe
 
 implicit none ; private
@@ -843,7 +843,7 @@ subroutine open_doc_file(doc)
       open(doc%unitAll, file=trim(fileName), access='SEQUENTIAL', form='FORMATTED', &
            action='WRITE', status='OLD', position='APPEND', iostat=ios)
     endif
-    inquire(doc%unitAll, opened=opened)
+    inquire(unit=doc%unitAll, opened=opened)
     if ((.not.opened) .or. (ios /= 0)) then
       call MOM_error(FATAL, "Failed to open doc file "//trim(fileName)//".")
     endif
@@ -864,7 +864,7 @@ subroutine open_doc_file(doc)
       open(doc%unitShort, file=trim(fileName), access='SEQUENTIAL', form='FORMATTED', &
            action='WRITE', status='OLD', position='APPEND', iostat=ios)
     endif
-    inquire(doc%unitShort, opened=opened)
+    inquire(unit=doc%unitShort, opened=opened)
     if ((.not.opened) .or. (ios /= 0)) then
       call MOM_error(FATAL, "Failed to open doc file "//trim(fileName)//".")
     endif
@@ -885,7 +885,7 @@ subroutine open_doc_file(doc)
       open(doc%unitLayout, file=trim(fileName), access='SEQUENTIAL', form='FORMATTED', &
            action='WRITE', status='OLD', position='APPEND', iostat=ios)
     endif
-    inquire(doc%unitLayout, opened=opened)
+    inquire(unit=doc%unitLayout, opened=opened)
     if ((.not.opened) .or. (ios /= 0)) then
       call MOM_error(FATAL, "Failed to open doc file "//trim(fileName)//".")
     endif
@@ -906,7 +906,7 @@ subroutine open_doc_file(doc)
       open(doc%unitDebugging, file=trim(fileName), access='SEQUENTIAL', form='FORMATTED', &
            action='WRITE', status='OLD', position='APPEND', iostat=ios)
     endif
-    inquire(doc%unitDebugging, opened=opened)
+    inquire(unit=doc%unitDebugging, opened=opened)
     if ((.not.opened) .or. (ios /= 0)) then
       call MOM_error(FATAL, "Failed to open doc file "//trim(fileName)//".")
     endif
@@ -922,7 +922,7 @@ function find_unused_unit_number()
   integer :: find_unused_unit_number
   logical :: opened
   do find_unused_unit_number=512,42,-1
-    inquire( find_unused_unit_number, opened=opened)
+    inquire( unit=find_unused_unit_number, opened=opened)
     if (.not.opened) exit
   enddo
   if (opened) call MOM_error(FATAL, &

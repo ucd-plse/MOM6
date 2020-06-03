@@ -8,7 +8,7 @@ use MOM_cpu_clock,       only : CLOCK_MODULE, CLOCK_ROUTINE
 use MOM_diag_mediator,   only : post_data, query_averaging_enabled, diag_ctrl
 use MOM_diag_mediator,   only : register_diag_field, safe_alloc_ptr, time_type
 use MOM_domains,         only : sum_across_PEs, max_across_PEs
-use MOM_domains,         only : create_group_pass, do_group_pass, group_pass_type, pass_var
+use MOM_domains,         only : create_group_pass, do_group_pass, mpp_group_update_type, pass_var
 use MOM_error_handler,   only : MOM_error, FATAL, WARNING, MOM_mesg, is_root_pe
 use MOM_file_parser,     only : get_param, log_version, param_file_type
 use MOM_grid,            only : ocean_grid_type
@@ -34,7 +34,7 @@ type, public :: tracer_advect_CS ; private
   logical :: debug                 !< If true, write verbose checksums for debugging purposes.
   logical :: usePPM                !< If true, use PPM instead of PLM
   logical :: useHuynh              !< If true, use the Huynh scheme for PPM interface values
-  type(group_pass_type) :: pass_uhr_vhr_t_hprev !< A structred used for group passes
+  type(mpp_group_update_type) :: pass_uhr_vhr_t_hprev !< A structred used for group passes
 end type tracer_advect_CS
 
 !>@{ CPU time clocks

@@ -9,7 +9,7 @@ use MOM_diag_mediator, only : post_data, query_averaging_enabled, register_diag_
 use MOM_diag_mediator, only : safe_alloc_ptr, diag_ctrl, enable_averaging
 use MOM_domains, only : min_across_PEs, clone_MOM_domain, pass_vector
 use MOM_domains, only : To_All, Scalar_Pair, AGRID, CORNER, MOM_domain_type
-use MOM_domains, only : create_group_pass, do_group_pass, group_pass_type
+use MOM_domains, only : create_group_pass, do_group_pass, mpp_group_update_type
 use MOM_domains, only : start_group_pass, complete_group_pass, pass_var
 use MOM_error_handler, only : MOM_error, MOM_mesg, FATAL, WARNING, is_root_pe
 use MOM_file_parser, only : get_param, log_param, log_version, param_file_type
@@ -90,11 +90,11 @@ type, private :: BT_OBC_type
   !>@}
   logical :: is_alloced = .false. !< True if BT_OBC is in use and has been allocated
 
-  type(group_pass_type) :: pass_uv   !< Structure for group halo pass
-  type(group_pass_type) :: pass_uhvh !< Structure for group halo pass
-  type(group_pass_type) :: pass_h    !< Structure for group halo pass
-  type(group_pass_type) :: pass_cg   !< Structure for group halo pass
-  type(group_pass_type) :: pass_eta_outer  !< Structure for group halo pass
+  type(mpp_group_update_type) :: pass_uv   !< Structure for group halo pass
+  type(mpp_group_update_type) :: pass_uhvh !< Structure for group halo pass
+  type(mpp_group_update_type) :: pass_h    !< Structure for group halo pass
+  type(mpp_group_update_type) :: pass_cg   !< Structure for group halo pass
+  type(mpp_group_update_type) :: pass_eta_outer  !< Structure for group halo pass
 end type BT_OBC_type
 
 !> The barotropic stepping control stucture
@@ -284,17 +284,17 @@ type, public :: barotropic_CS ; private
   integer :: jsdw !< The lower j-memory limit for the wide halo arrays.
   integer :: jedw !< The upper j-memory limit for the wide halo arrays.
 
-  type(group_pass_type) :: pass_q_DCor !< Handle for a group halo pass
-  type(group_pass_type) :: pass_gtot !< Handle for a group halo pass
-  type(group_pass_type) :: pass_tmp_uv !< Handle for a group halo pass
-  type(group_pass_type) :: pass_eta_bt_rem !< Handle for a group halo pass
-  type(group_pass_type) :: pass_force_hbt0_Cor_ref !< Handle for a group halo pass
-  type(group_pass_type) :: pass_Dat_uv !< Handle for a group halo pass
-  type(group_pass_type) :: pass_eta_ubt !< Handle for a group halo pass
-  type(group_pass_type) :: pass_etaav !< Handle for a group halo pass
-  type(group_pass_type) :: pass_ubt_Cor !< Handle for a group halo pass
-  type(group_pass_type) :: pass_ubta_uhbta !< Handle for a group halo pass
-  type(group_pass_type) :: pass_e_anom !< Handle for a group halo pass
+  type(mpp_group_update_type) :: pass_q_DCor !< Handle for a group halo pass
+  type(mpp_group_update_type) :: pass_gtot !< Handle for a group halo pass
+  type(mpp_group_update_type) :: pass_tmp_uv !< Handle for a group halo pass
+  type(mpp_group_update_type) :: pass_eta_bt_rem !< Handle for a group halo pass
+  type(mpp_group_update_type) :: pass_force_hbt0_Cor_ref !< Handle for a group halo pass
+  type(mpp_group_update_type) :: pass_Dat_uv !< Handle for a group halo pass
+  type(mpp_group_update_type) :: pass_eta_ubt !< Handle for a group halo pass
+  type(mpp_group_update_type) :: pass_etaav !< Handle for a group halo pass
+  type(mpp_group_update_type) :: pass_ubt_Cor !< Handle for a group halo pass
+  type(mpp_group_update_type) :: pass_ubta_uhbta !< Handle for a group halo pass
+  type(mpp_group_update_type) :: pass_e_anom !< Handle for a group halo pass
 
   !>@{ Diagnostic IDs
   integer :: id_PFu_bt = -1, id_PFv_bt = -1, id_Coru_bt = -1, id_Corv_bt = -1
@@ -3936,8 +3936,8 @@ subroutine barotropic_init(u, v, h, eta, Time, G, GV, US, param_file, diag, CS, 
                       ! geometry when LINEARIZED_BT_CORIOLIS is true or BT_NONLIN_STRESS is false [Z ~> m].
   real, allocatable, dimension(:,:) :: lin_drag_h
   type(memory_size_type) :: MS
-  type(group_pass_type) :: pass_static_data, pass_q_D_Cor
-  type(group_pass_type) :: pass_bt_hbt_btav, pass_a_polarity
+  type(mpp_group_update_type) :: pass_static_data, pass_q_D_Cor
+  type(mpp_group_update_type) :: pass_bt_hbt_btav, pass_a_polarity
   logical :: default_2018_answers ! The default setting for the various 2018_ANSWERS flags.
   logical :: apply_bt_drag, use_BT_cont_type
   character(len=48) :: thickness_units, flux_units

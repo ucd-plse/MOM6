@@ -8,7 +8,7 @@ use MOM_cpu_clock,             only : CLOCK_MODULE, CLOCK_ROUTINE
 use MOM_diag_mediator,         only : post_data, diag_ctrl
 use MOM_diag_mediator,         only : register_diag_field, safe_alloc_ptr, time_type
 use MOM_domains,               only : sum_across_PEs, max_across_PEs
-use MOM_domains,               only : create_group_pass, do_group_pass, group_pass_type
+use MOM_domains,               only : create_group_pass, do_group_pass, mpp_group_update_type
 use MOM_domains,               only : pass_vector
 use MOM_debugging,             only : hchksum, uvchksum
 use MOM_diabatic_driver,              only : diabatic_CS
@@ -80,7 +80,7 @@ type, public :: tracer_hor_diff_CS ; private
   integer :: id_khdt_y  = -1
   !>@}
 
-  type(group_pass_type) :: pass_t !< For group halo pass, used in both
+  type(mpp_group_update_type) :: pass_t !< For group halo pass, used in both
                                   !! tracer_hordiff and tracer_epipycnal_ML_diff
 end type tracer_hor_diff_CS
 

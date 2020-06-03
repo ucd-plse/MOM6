@@ -26,7 +26,7 @@ use MOM_diapyc_energy_req,   only : diapyc_energy_req_calc, diapyc_energy_req_te
 use MOM_CVMix_conv,          only : CVMix_conv_init, CVMix_conv_cs
 use MOM_CVMix_conv,          only : CVMix_conv_end, calculate_CVMix_conv
 use MOM_domains,             only : pass_var, To_West, To_South, To_All, Omit_Corners
-use MOM_domains,             only : create_group_pass, do_group_pass, group_pass_type
+use MOM_domains,             only : create_group_pass, do_group_pass, mpp_group_update_type
 use MOM_tidal_mixing,        only : tidal_mixing_init, tidal_mixing_cs
 use MOM_tidal_mixing,        only : tidal_mixing_end
 use MOM_energetic_PBL,       only : energetic_PBL, energetic_PBL_init
@@ -230,8 +230,8 @@ type, public:: diabatic_CS; private
   type(CVMix_conv_cs),          pointer :: CVMix_conv_csp        => NULL() !< Control structure for a child module
   type(diapyc_energy_req_CS),   pointer :: diapyc_en_rec_CSp     => NULL() !< Control structure for a child module
 
-  type(group_pass_type) :: pass_hold_eb_ea !< For group halo pass
-  type(group_pass_type) :: pass_Kv         !< For group halo pass
+  type(mpp_group_update_type) :: pass_hold_eb_ea !< For group halo pass
+  type(mpp_group_update_type) :: pass_Kv         !< For group halo pass
   type(diag_grid_storage) :: diag_grids_prev!< Stores diagnostic grids at some previous point in the algorithm
   ! Data arrays for communicating between components
   real, allocatable, dimension(:,:,:) :: KPP_NLTheat    !< KPP non-local transport for heat [m s-1]

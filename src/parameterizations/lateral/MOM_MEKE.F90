@@ -9,7 +9,7 @@ use MOM_debugging,     only : hchksum, uvchksum
 use MOM_cpu_clock,     only : cpu_clock_id, cpu_clock_begin, cpu_clock_end, CLOCK_ROUTINE
 use MOM_diag_mediator, only : post_data, register_diag_field, safe_alloc_ptr
 use MOM_diag_mediator, only : diag_ctrl, time_type
-use MOM_domains,       only : create_group_pass, do_group_pass, group_pass_type
+use MOM_domains,       only : create_group_pass, do_group_pass, mpp_group_update_type
 use MOM_error_handler, only : MOM_error, FATAL, WARNING, NOTE, MOM_mesg
 use MOM_file_parser,   only : read_param, get_param, log_version, param_file_type
 use MOM_grid,          only : ocean_grid_type
@@ -100,8 +100,8 @@ type, public :: MEKE_CS ; private
 
   ! Infrastructure
   integer :: id_clock_pass !< Clock for group pass calls
-  type(group_pass_type) :: pass_MEKE !< Group halo pass handle for MEKE%MEKE and maybe MEKE%Kh_diff
-  type(group_pass_type) :: pass_Kh   !< Group halo pass handle for MEKE%Kh, MEKE%Ku, and/or MEKE%Au
+  type(mpp_group_update_type) :: pass_MEKE !< Group halo pass handle for MEKE%MEKE and maybe MEKE%Kh_diff
+  type(mpp_group_update_type) :: pass_Kh   !< Group halo pass handle for MEKE%Kh, MEKE%Ku, and/or MEKE%Au
 end type MEKE_CS
 
 contains

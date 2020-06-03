@@ -11,7 +11,7 @@ use MOM_diag_mediator, only : register_diag_field, diag_ctrl, safe_alloc_ptr
 use MOM_diag_mediator, only : axes_grp, define_axes_group
 use MOM_domains, only       : AGRID, To_South, To_West, To_All
 use MOM_domains, only       : create_group_pass, do_group_pass, pass_var
-use MOM_domains, only       : group_pass_type, start_group_pass, complete_group_pass
+use MOM_domains, only       : mpp_group_update_type, start_group_pass, complete_group_pass
 use MOM_error_handler, only : MOM_error, FATAL, WARNING, MOM_mesg, is_root_pe
 use MOM_file_parser, only   : read_param, get_param, log_param, log_version, param_file_type
 use MOM_grid, only          : ocean_grid_type
@@ -201,7 +201,7 @@ subroutine propagate_int_tide(h, tv, cn, TKE_itidal_input, vel_btTide, Nb, dt, &
   character(len=160) :: mesg  ! The text of an error message
   integer :: a, m, fr, i, j, is, ie, js, je, isd, ied, jsd, jed, nAngle, nzm
   integer :: id_g, jd_g         ! global (decomp-invar) indices (for debugging)
-  type(group_pass_type), save :: pass_test, pass_En
+  type(mpp_group_update_type), save :: pass_test, pass_En
 
   if (.not.associated(CS)) return
   is = G%isc ; ie = G%iec ; js = G%jsc ; je = G%jec

@@ -6,7 +6,7 @@ module MOM_bulk_mixed_layer
 use MOM_cpu_clock, only : cpu_clock_id, cpu_clock_begin, cpu_clock_end, CLOCK_ROUTINE
 use MOM_diag_mediator, only : post_data, register_diag_field, safe_alloc_alloc
 use MOM_diag_mediator, only : time_type, diag_ctrl, diag_update_remap_grids
-use MOM_domains,       only : create_group_pass, do_group_pass, group_pass_type
+use MOM_domains,       only : create_group_pass, do_group_pass, mpp_group_update_type
 use MOM_error_handler, only : MOM_error, FATAL, WARNING
 use MOM_file_parser,   only : get_param, log_param, log_version, param_file_type
 use MOM_forcing_type,  only : extractFluxes1d, forcing
@@ -138,7 +138,7 @@ type, public :: bulkmixedlayer_CS ; private
                        !! detrainment [R Z L2 T-3 ~> W m-2].
   logical :: allow_clocks_in_omp_loops  !< If true, clocks can be called from inside loops that can
                                         !! be threaded. To run with multiple threads, set to False.
-  type(group_pass_type) :: pass_h_sum_hmbl_prev !< For group halo pass
+  type(mpp_group_update_type) :: pass_h_sum_hmbl_prev !< For group halo pass
 
   !>@{ Diagnostic IDs
   integer :: id_ML_depth = -1, id_TKE_wind = -1, id_TKE_mixing = -1
