@@ -33,7 +33,9 @@ use mpp_io_mod,           only : get_file_info=>mpp_get_info, get_file_atts=>mpp
 use mpp_io_mod,           only : get_file_fields=>mpp_get_fields, get_file_times=>mpp_get_times
 use mpp_io_mod,           only : io_infra_init=>mpp_io_init
 
+#ifndef ROSEPREP
 use netcdf
+#endif
 
 implicit none ; private
 
@@ -483,6 +485,7 @@ function num_timelevels(filename, varname, min_dims) result(n_time)
                                               !! dimension than this, then 0 is returned.
   integer :: n_time                           !< number of time levels varname has in filename
 
+#ifndef ROSEPREP
   logical :: found
   character(len=200) :: msg
   character(len=nf90_max_name) :: name
@@ -588,6 +591,9 @@ function num_timelevels(filename, varname, min_dims) result(n_time)
 
   return
 
+#else
+  n_time = -1
+#endif
 end function num_timelevels
 
 
@@ -970,9 +976,13 @@ subroutine MOM_read_vector_2d(filename, u_fieldname, v_fieldname, u_data, v_data
 
   u_pos = EAST_FACE ; v_pos = NORTH_FACE
   if (present(stagger)) then
-    if (stagger == CGRID_NE) then ; u_pos = EAST_FACE ; v_pos = NORTH_FACE
-    elseif (stagger == BGRID_NE) then ; u_pos = CORNER ; v_pos = CORNER
-    elseif (stagger == AGRID) then ; u_pos = CENTER ; v_pos = CENTER ; endif
+    if (stagger == CGRID_NE) then
+      u_pos = EAST_FACE ; v_pos = NORTH_FACE
+    elseif (stagger == BGRID_NE) then
+      u_pos = CORNER ; v_pos = CORNER
+    elseif (stagger == AGRID) then
+      u_pos = CENTER ; v_pos = CENTER
+    endif
   endif
 
   call read_data(filename, u_fieldname, u_data, MOM_Domain%mpp_domain, &
@@ -1016,9 +1026,13 @@ subroutine MOM_read_vector_3d(filename, u_fieldname, v_fieldname, u_data, v_data
 
   u_pos = EAST_FACE ; v_pos = NORTH_FACE
   if (present(stagger)) then
-    if (stagger == CGRID_NE) then ; u_pos = EAST_FACE ; v_pos = NORTH_FACE
-    elseif (stagger == BGRID_NE) then ; u_pos = CORNER ; v_pos = CORNER
-    elseif (stagger == AGRID) then ; u_pos = CENTER ; v_pos = CENTER ; endif
+    if (stagger == CGRID_NE) then
+      u_pos = EAST_FACE ; v_pos = NORTH_FACE
+    elseif (stagger == BGRID_NE) then
+      u_pos = CORNER ; v_pos = CORNER
+    elseif (stagger == AGRID) then
+      u_pos = CENTER ; v_pos = CENTER
+    endif
   endif
 
   call read_data(filename, u_fieldname, u_data, MOM_Domain%mpp_domain, &

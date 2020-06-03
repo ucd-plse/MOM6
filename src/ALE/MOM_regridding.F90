@@ -30,7 +30,9 @@ use coord_hycom,  only : init_coord_hycom, hycom_CS, set_hycom_params, build_hyc
 use coord_slight, only : init_coord_slight, slight_CS, set_slight_params, build_slight_column, end_coord_slight
 use coord_adapt,  only : init_coord_adapt, adapt_CS, set_adapt_params, build_adapt_column, end_coord_adapt
 
+#ifndef ROSEPREP
 use netcdf ! Used by check_grid_def()
+#endif
 
 implicit none ; private
 
@@ -743,6 +745,7 @@ subroutine check_grid_def(filename, varname, expected_units, msg, ierr)
   integer :: ncid, status, intid, vid
   integer :: i
 
+#ifndef ROSEPREP
   ierr = .false.
   status = NF90_OPEN(trim(filename), NF90_NOWRITE, ncid)
   if (status /= NF90_NOERR) then
@@ -780,11 +783,11 @@ subroutine check_grid_def(filename, varname, expected_units, msg, ierr)
       ierr = .true.
     endif
   endif
+#endif
 
   if (ierr) then
     msg = 'Units incorrect: '//trim(units)//' /= '//trim(expected_units)
   endif
-
 end subroutine check_grid_def
 
 !> Deallocation of regridding memory

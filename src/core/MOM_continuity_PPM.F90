@@ -18,7 +18,7 @@ implicit none ; private
 
 #include <MOM_memory.h>
 
-public continuity_PPM, continuity_PPM_init, continuity_PPM_end, continuity_PPM_stencil
+!public continuity_PPM, continuity_PPM_init, continuity_PPM_end, continuity_PPM_stencil
 
 !>@{ CPU time clock IDs
 integer :: id_clock_update, id_clock_correct
@@ -614,14 +614,20 @@ subroutine zonal_face_thickness(u, h, h_L, h_R, h_u, dt, G, US, LB, vol_CFL, &
   !$OMP parallel do default(shared) private(CFL,curv_3,h_marg,h_avg)
   do k=1,nz ; do j=jsh,jeh ; do I=ish-1,ieh
     if (u(I,j,k) > 0.0) then
-      if (vol_CFL) then ; CFL = (u(I,j,k) * dt) * (G%dy_Cu(I,j) * G%IareaT(i,j))
-      else ; CFL = u(I,j,k) * dt * G%IdxT(i,j) ; endif
+      if (vol_CFL) then
+        CFL = (u(I,j,k) * dt) * (G%dy_Cu(I,j) * G%IareaT(i,j))
+      else
+        CFL = u(I,j,k) * dt * G%IdxT(i,j)
+      endif
       curv_3 = h_L(i,j,k) + h_R(i,j,k) - 2.0*h(i,j,k)
       h_avg = h_R(i,j,k) + CFL * (0.5*(h_L(i,j,k) - h_R(i,j,k)) + curv_3*(CFL - 1.5))
       h_marg = h_R(i,j,k) + CFL * ((h_L(i,j,k) - h_R(i,j,k)) + 3.0*curv_3*(CFL - 1.0))
     elseif (u(I,j,k) < 0.0) then
-      if (vol_CFL) then ; CFL = (-u(I,j,k)*dt) * (G%dy_Cu(I,j) * G%IareaT(i+1,j))
-      else ; CFL = -u(I,j,k) * dt * G%IdxT(i+1,j) ; endif
+      if (vol_CFL) then
+        CFL = (-u(I,j,k)*dt) * (G%dy_Cu(I,j) * G%IareaT(i+1,j))
+      else
+        CFL = -u(I,j,k) * dt * G%IdxT(i+1,j)
+      endif
       curv_3 = h_L(i+1,j,k) + h_R(i+1,j,k) - 2.0*h(i+1,j,k)
       h_avg = h_L(i+1,j,k) + CFL * (0.5*(h_R(i+1,j,k)-h_L(i+1,j,k)) + curv_3*(CFL - 1.5))
       h_marg = h_L(i+1,j,k) + CFL * ((h_R(i+1,j,k)-h_L(i+1,j,k)) + &
@@ -635,8 +641,11 @@ subroutine zonal_face_thickness(u, h, h_L, h_R, h_u, dt, G, US, LB, vol_CFL, &
  !             (h_L(i+1,j,k) + h_R(i,j,k) + GV%H_subroundoff)
     endif
 
-    if (marginal) then ; h_u(I,j,k) = h_marg
-    else ; h_u(I,j,k) = h_avg ; endif
+    if (marginal) then
+      h_u(I,j,k) = h_marg
+    else
+      h_u(I,j,k) = h_avg
+    endif
   enddo ; enddo ; enddo
   if (present(visc_rem_u)) then
     !$OMP parallel do default(shared)
@@ -646,33 +655,43 @@ subroutine zonal_face_thickness(u, h, h_L, h_R, h_u, dt, G, US, LB, vol_CFL, &
   endif
 
   local_open_BC = .false.
-  if (present(OBC)) then ; if (associated(OBC)) then
-    local_open_BC = OBC%open_u_BCs_exist_globally
-  endif ; endif
+  if (present(OBC)) then
+    if (associated(OBC)) then
+      local_open_BC = OBC%open_u_BCs_exist_globally
+    endif
+  endif
   if (local_open_BC) then
     do n = 1, OBC%number_of_segments
       if (OBC%segment(n)%open .and. OBC%segment(n)%is_E_or_W) then
         I = OBC%segment(n)%HI%IsdB
         if (OBC%segment(n)%direction == OBC_DIRECTION_E) then
-          if (present(visc_rem_u)) then ; do k=1,nz
-            do j = OBC%segment(n)%HI%jsd, OBC%segment(n)%HI%jed
-              h_u(I,j,k) = h(i,j,k) * visc_rem_u(I,j,k)
+          if (present(visc_rem_u)) then
+            do k=1,nz
+              do j = OBC%segment(n)%HI%jsd, OBC%segment(n)%HI%jed
+                h_u(I,j,k) = h(i,j,k) * visc_rem_u(I,j,k)
+              enddo
             enddo
-          enddo ; else ; do k=1,nz
-            do j = OBC%segment(n)%HI%jsd, OBC%segment(n)%HI%jed
-              h_u(I,j,k) = h(i,j,k)
+          else
+            do k=1,nz
+              do j = OBC%segment(n)%HI%jsd, OBC%segment(n)%HI%jed
+                h_u(I,j,k) = h(i,j,k)
+              enddo
             enddo
-          enddo ; endif
+          endif
         else
-          if (present(visc_rem_u)) then ; do k=1,nz
-            do j = OBC%segment(n)%HI%jsd, OBC%segment(n)%HI%jed
-              h_u(I,j,k) = h(i+1,j,k) * visc_rem_u(I,j,k)
+          if (present(visc_rem_u)) then
+            do k=1,nz
+              do j = OBC%segment(n)%HI%jsd, OBC%segment(n)%HI%jed
+                h_u(I,j,k) = h(i+1,j,k) * visc_rem_u(I,j,k)
+              enddo
             enddo
-          enddo ; else ; do k=1,nz
-            do j = OBC%segment(n)%HI%jsd, OBC%segment(n)%HI%jed
-              h_u(I,j,k) = h(i+1,j,k)
+          else
+            do k=1,nz
+              do j = OBC%segment(n)%HI%jsd, OBC%segment(n)%HI%jed
+                h_u(I,j,k) = h(i+1,j,k)
+              enddo
             enddo
-          enddo ; endif
+          endif
         endif
       endif
     enddo
@@ -748,9 +767,11 @@ subroutine zonal_flux_adjust(u, h_in, h_L, h_R, uhbt, uh_tot_0, duhdu_tot_0, &
 
   uh_aux(:,:) = 0.0 ; duhdu(:,:) = 0.0
 
-  if (present(uh_3d)) then ; do k=1,nz ; do I=ish-1,ieh
-    uh_aux(i,k) = uh_3d(I,j,k)
-  enddo ; enddo ; endif
+  if (present(uh_3d)) then
+    do k=1,nz ; do I=ish-1,ieh
+      uh_aux(i,k) = uh_3d(I,j,k)
+    enddo ; enddo
+  endif
 
   do I=ish-1,ieh
     du(I) = 0.0 ; do_I(I) = do_I_in(I)
@@ -773,9 +794,13 @@ subroutine zonal_flux_adjust(u, h_in, h_L, h_R, uhbt, uh_tot_0, duhdu_tot_0, &
     tol_vel = CS%tol_vel
 
     do I=ish-1,ieh
-      if (uh_err(I) > 0.0) then ; du_max(I) = du(I)
-      elseif (uh_err(I) < 0.0) then ; du_min(I) = du(I)
-      else ; do_I(I) = .false. ; endif
+      if (uh_err(I) > 0.0) then
+        du_max(I) = du(I)
+      elseif (uh_err(I) < 0.0) then
+        du_min(I) = du(I)
+      else
+        do_I(I) = .false.
+      endif
     enddo
     domore = .false.
     do I=ish-1,ieh ; if (do_I(I)) then
@@ -814,12 +839,15 @@ subroutine zonal_flux_adjust(u, h_in, h_L, h_R, uhbt, uh_tot_0, duhdu_tot_0, &
     endif ; enddo
     if (.not.domore) exit
 
-    if ((itt < max_itts) .or. present(uh_3d)) then ; do k=1,nz
-      do I=ish-1,ieh ; u_new(I) = u(I,j,k) + du(I) * visc_rem(I,k) ; enddo
+    if ((itt < max_itts) .or. present(uh_3d)) then
+      do k=1,nz
+        do I=ish-1,ieh ; u_new(I) = u(I,j,k) + du(I) * visc_rem(I,k)
+      enddo
       call zonal_flux_layer(u_new, h_in(:,j,k), h_L(:,j,k), h_R(:,j,k), &
                             uh_aux(:,k), duhdu(:,k), visc_rem(:,k), &
                             dt, G, US, j, ish, ieh, do_I, CS%vol_CFL, OBC)
-    enddo ; endif
+      enddo
+    endif
 
     if (itt < max_itts) then
       do I=ish-1,ieh
@@ -838,9 +866,11 @@ subroutine zonal_flux_adjust(u, h_in, h_L, h_R, uhbt, uh_tot_0, duhdu_tot_0, &
   ! so-be-it, or else use a final upwind correction?
   ! This never seems to happen with 20 iterations as max_itt.
 
-  if (present(uh_3d)) then ; do k=1,nz ; do I=ish-1,ieh
-    uh_3d(I,j,k) = uh_aux(I,k)
-  enddo ; enddo ; endif
+  if (present(uh_3d)) then
+    do k=1,nz ; do I=ish-1,ieh
+      uh_3d(I,j,k) = uh_aux(I,k)
+    enddo ; enddo
+  endif
 
 end subroutine zonal_flux_adjust
 
@@ -980,11 +1010,16 @@ subroutine set_zonal_BT_cont(u, h_in, h_L, h_R, BT_cont, uh_tot_0, duhdu_tot_0, 
     FA_0 = FAmt_0(I) ; FA_avg = FAmt_0(I)
     if ((duL(I) - du0(I)) /= 0.0) &
       FA_avg = uhtot_L(I) / (duL(I) - du0(I))
-    if (FA_avg > max(FA_0, FAmt_L(I))) then ; FA_avg = max(FA_0, FAmt_L(I))
-    elseif (FA_avg < min(FA_0, FAmt_L(I))) then ; FA_0 = FA_avg ; endif
+    if (FA_avg > max(FA_0, FAmt_L(I))) then
+      FA_avg = max(FA_0, FAmt_L(I))
+    elseif (FA_avg < min(FA_0, FAmt_L(I))) then
+      FA_0 = FA_avg
+    endif
 
     BT_cont%FA_u_W0(I,j) = FA_0 ; BT_cont%FA_u_WW(I,j) = FAmt_L(I)
-    if (abs(FA_0-FAmt_L(I)) <= 1e-12*FA_0) then ; BT_cont%uBT_WW(I,j) = 0.0 ; else
+    if (abs(FA_0-FAmt_L(I)) <= 1e-12*FA_0) then
+      BT_cont%uBT_WW(I,j) = 0.0
+    else
       BT_cont%uBT_WW(I,j) = (1.5 * (duL(I) - du0(I))) * &
                             ((FAmt_L(I) - FA_avg) / (FAmt_L(I) - FA_0))
     endif
@@ -992,11 +1027,16 @@ subroutine set_zonal_BT_cont(u, h_in, h_L, h_R, BT_cont, uh_tot_0, duhdu_tot_0, 
     FA_0 = FAmt_0(I) ; FA_avg = FAmt_0(I)
     if ((duR(I) - du0(I)) /= 0.0) &
       FA_avg = uhtot_R(I) / (duR(I) - du0(I))
-    if (FA_avg > max(FA_0, FAmt_R(I))) then ; FA_avg = max(FA_0, FAmt_R(I))
-    elseif (FA_avg < min(FA_0, FAmt_R(I))) then ; FA_0 = FA_avg ; endif
+    if (FA_avg > max(FA_0, FAmt_R(I))) then
+      FA_avg = max(FA_0, FAmt_R(I))
+    elseif (FA_avg < min(FA_0, FAmt_R(I))) then
+      FA_0 = FA_avg
+    endif
 
     BT_cont%FA_u_E0(I,j) = FA_0 ; BT_cont%FA_u_EE(I,j) = FAmt_R(I)
-    if (abs(FAmt_R(I) - FA_0) <= 1e-12*FA_0) then ; BT_cont%uBT_EE(I,j) = 0.0 ; else
+    if (abs(FAmt_R(I) - FA_0) <= 1e-12*FA_0) then
+      BT_cont%uBT_EE(I,j) = 0.0
+    else
       BT_cont%uBT_EE(I,j) = (1.5 * (duR(I) - du0(I))) * &
                             ((FAmt_R(I) - FA_avg) / (FAmt_R(I) - FA_0))
     endif
@@ -1779,10 +1819,15 @@ subroutine set_merid_BT_cont(v, h_in, h_L, h_R, BT_cont, vh_tot_0, dvhdv_tot_0, 
     FA_0 = FAmt_0(i) ; FA_avg = FAmt_0(i)
     if ((dvL(i) - dv0(i)) /= 0.0) &
       FA_avg = vhtot_L(i) / (dvL(i) - dv0(i))
-    if (FA_avg > max(FA_0, FAmt_L(i))) then ; FA_avg = max(FA_0, FAmt_L(i))
-    elseif (FA_avg < min(FA_0, FAmt_L(i))) then ; FA_0 = FA_avg ; endif
+    if (FA_avg > max(FA_0, FAmt_L(i))) then
+      FA_avg = max(FA_0, FAmt_L(i))
+    elseif (FA_avg < min(FA_0, FAmt_L(i))) then
+      FA_0 = FA_avg
+    endif
     BT_cont%FA_v_S0(i,J) = FA_0 ; BT_cont%FA_v_SS(i,J) = FAmt_L(i)
-    if (abs(FA_0-FAmt_L(i)) <= 1e-12*FA_0) then ; BT_cont%vBT_SS(i,J) = 0.0 ; else
+    if (abs(FA_0-FAmt_L(i)) <= 1e-12*FA_0) then
+      BT_cont%vBT_SS(i,J) = 0.0
+    else
       BT_cont%vBT_SS(i,J) = (1.5 * (dvL(i) - dv0(i))) * &
                    ((FAmt_L(i) - FA_avg) / (FAmt_L(i) - FA_0))
     endif
@@ -1790,10 +1835,15 @@ subroutine set_merid_BT_cont(v, h_in, h_L, h_R, BT_cont, vh_tot_0, dvhdv_tot_0, 
     FA_0 = FAmt_0(i) ; FA_avg = FAmt_0(i)
     if ((dvR(i) - dv0(i)) /= 0.0) &
       FA_avg = vhtot_R(i) / (dvR(i) - dv0(i))
-    if (FA_avg > max(FA_0, FAmt_R(i))) then ; FA_avg = max(FA_0, FAmt_R(i))
-    elseif (FA_avg < min(FA_0, FAmt_R(i))) then ; FA_0 = FA_avg ; endif
+    if (FA_avg > max(FA_0, FAmt_R(i))) then
+      FA_avg = max(FA_0, FAmt_R(i))
+    elseif (FA_avg < min(FA_0, FAmt_R(i))) then
+      FA_0 = FA_avg
+    endif
     BT_cont%FA_v_N0(i,J) = FA_0 ; BT_cont%FA_v_NN(i,J) = FAmt_R(i)
-    if (abs(FAmt_R(i) - FA_0) <= 1e-12*FA_0) then ; BT_cont%vBT_NN(i,J) = 0.0 ; else
+    if (abs(FAmt_R(i) - FA_0) <= 1e-12*FA_0) then
+      BT_cont%vBT_NN(i,J) = 0.0
+    else
       BT_cont%vBT_NN(i,J) = (1.5 * (dvR(i) - dv0(i))) * &
                    ((FAmt_R(i) - FA_avg) / (FAmt_R(i) - FA_0))
     endif

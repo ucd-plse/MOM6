@@ -3113,7 +3113,7 @@ subroutine diag_mediator_init(G, GV, US, nz, param_file, diag_cs, doc_file_dir)
       new_file = .true. ; if (diag_CS%available_diag_doc_unit /= -1) new_file = .false.
     ! Find an unused unit number.
       do new_unit=512,42,-1
-        inquire( new_unit, opened=opened)
+        inquire( unit=new_unit, opened=opened)
         if (.not.opened) exit
       enddo
       if (opened) call MOM_error(FATAL, &
@@ -3133,7 +3133,7 @@ subroutine diag_mediator_init(G, GV, US, nz, param_file, diag_cs, doc_file_dir)
         open(diag_CS%available_diag_doc_unit, file=trim(doc_path), access='SEQUENTIAL', form='FORMATTED', &
              action='WRITE', status='OLD', position='APPEND', iostat=ios)
       endif
-      inquire(diag_CS%available_diag_doc_unit, opened=opened)
+      inquire(unit=diag_CS%available_diag_doc_unit, opened=opened)
       if ((.not.opened) .or. (ios /= 0)) then
         call MOM_error(FATAL, "Failed to open available diags file "//trim(doc_path)//".")
       endif
@@ -3161,7 +3161,7 @@ subroutine diag_mediator_init(G, GV, US, nz, param_file, diag_cs, doc_file_dir)
       new_file = .true. ; if (diag_CS%chksum_iounit /= -1) new_file = .false.
     ! Find an unused unit number.
       do new_unit=512,42,-1
-        inquire( new_unit, opened=opened)
+        inquire( unit=new_unit, opened=opened)
         if (.not.opened) exit
       enddo
       if (opened) call MOM_error(FATAL, &
@@ -3181,7 +3181,7 @@ subroutine diag_mediator_init(G, GV, US, nz, param_file, diag_cs, doc_file_dir)
         open(diag_CS%chksum_iounit, file=trim(doc_path), access='SEQUENTIAL', form='FORMATTED', &
              action='WRITE', status='OLD', position='APPEND', iostat=ios)
       endif
-      inquire(diag_CS%chksum_iounit, opened=opened)
+      inquire(unit=diag_CS%chksum_iounit, opened=opened)
       if ((.not.opened) .or. (ios /= 0)) then
         call MOM_error(FATAL, "Failed to open checksum diags file "//trim(doc_path)//".")
       endif
