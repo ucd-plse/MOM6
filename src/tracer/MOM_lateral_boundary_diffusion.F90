@@ -24,9 +24,12 @@ use MOM_CVMix_KPP,             only : KPP_get_BLD, KPP_CS
 use MOM_energetic_PBL,         only : energetic_PBL_get_MLD, energetic_PBL_CS
 use MOM_diabatic_driver,       only : diabatic_CS, extract_diabatic_member
 
-use iso_fortran_env, only : stdout=>output_unit, stderr=>error_unit
+!use iso_fortran_env, only : stdout=>output_unit, stderr=>error_unit
 
 implicit none ; private
+
+integer, parameter :: stderr=0
+integer, parameter :: stdout=6
 
 public near_boundary_unit_tests, lateral_boundary_diffusion, lateral_boundary_diffusion_init
 public boundary_k_range

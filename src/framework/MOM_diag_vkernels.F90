@@ -4,9 +4,12 @@ module MOM_diag_vkernels
 
 ! This file is part of MOM6. See LICENSE.md for the license.
 
-use iso_fortran_env, only : stdout=>output_unit, stderr=>error_unit
+!use iso_fortran_env, only : stdout=>output_unit, stderr=>error_unit
 
 implicit none ; private
+
+integer, parameter :: stderr=0
+integer, parameter :: stdout=6
 
 public diag_vkernels_unit_tests
 public interpolate_column

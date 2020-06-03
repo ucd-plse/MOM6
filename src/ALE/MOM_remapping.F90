@@ -14,9 +14,12 @@ use PLM_functions, only : PLM_reconstruction, PLM_boundary_extrapolation
 use PPM_functions, only : PPM_reconstruction, PPM_boundary_extrapolation
 use PQM_functions, only : PQM_reconstruction, PQM_boundary_extrapolation_v1
 
-use iso_fortran_env, only : stdout=>output_unit, stderr=>error_unit
+!use iso_fortran_env, only : stdout=>output_unit, stderr=>error_unit
 
 implicit none ; private
+
+integer, parameter :: stderr=0
+integer, parameter :: stdout=6
 
 #include <MOM_memory.h>
 

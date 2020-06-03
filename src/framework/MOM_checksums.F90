@@ -11,9 +11,11 @@ use MOM_error_handler, only : MOM_error, FATAL, is_root_pe
 use MOM_file_parser, only : log_version, param_file_type
 use MOM_hor_index, only : hor_index_type, rotate_hor_index
 
-use iso_fortran_env, only: error_unit
+!use iso_fortran_env, only: error_unit
 
 implicit none ; private
+
+integer, parameter :: error_unit=0
 
 public :: chksum0, zchksum
 public :: hchksum, Bchksum, uchksum, vchksum, qchksum, is_NaN, chksum

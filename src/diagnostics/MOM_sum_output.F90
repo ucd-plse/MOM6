@@ -3,7 +3,7 @@ module MOM_sum_output
 
 ! This file is part of MOM6. See LICENSE.md for the license.
 
-use iso_fortran_env, only : int64
+!use iso_fortran_env, only : int64
 use MOM_coms, only : sum_across_PEs, PE_here, root_PE, num_PEs, max_across_PEs
 use MOM_coms, only : reproducing_sum, reproducing_sum_EFP, EFP_to_real, real_to_EFP
 use MOM_coms, only : EFP_type, operator(+), operator(-), assignment(=), EFP_sum_across_PEs

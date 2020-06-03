@@ -11,9 +11,12 @@ use MersenneTwister_mod, only : new_RandomNumberSequence ! Constructor/initializ
 use MersenneTwister_mod, only : getRandomReal ! Generates a random number
 use MersenneTwister_mod, only : getRandomPositiveInt ! Generates a random positive integer
 
-use iso_fortran_env, only : stdout=>output_unit, stderr=>error_unit
+!use iso_fortran_env, only : stdout=>output_unit, stderr=>error_unit
 
 implicit none ; private
+
+integer, parameter :: stderr=0
+integer, parameter :: stdout=6
 
 public :: random_0d_constructor
 public :: random_01
