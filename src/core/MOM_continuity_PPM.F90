@@ -18,7 +18,7 @@ implicit none ; private
 
 #include <MOM_memory.h>
 
-!public continuity_PPM, continuity_PPM_init, continuity_PPM_end, continuity_PPM_stencil
+public continuity_PPM, continuity_PPM_init, continuity_PPM_end, continuity_PPM_stencil
 
 !>@{ CPU time clock IDs
 integer :: id_clock_update, id_clock_correct
