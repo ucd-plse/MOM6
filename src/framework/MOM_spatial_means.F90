@@ -3,10 +3,10 @@ module MOM_spatial_means
 
 ! This file is part of MOM6. See LICENSE.md for the license.
 
-use MOM_coms, only : EFP_type, operator(+), operator(-), assignment(=)
-use MOM_coms, only : EFP_to_real, real_to_EFP, EFP_sum_across_PEs
-use MOM_coms, only : reproducing_sum, reproducing_sum_EFP, EFP_to_real
-use MOM_coms, only : query_EFP_overflow_error, reset_EFP_overflow_error
+use MOM_coms!, only : EFP_type, operator(+), operator(-), assignment(=)
+!use MOM_coms, only : EFP_to_real, real_to_EFP, EFP_sum_across_PEs
+!use MOM_coms, only : reproducing_sum, reproducing_sum_EFP, EFP_to_real
+!use MOM_coms, only : query_EFP_overflow_error, reset_EFP_overflow_error
 use MOM_error_handler, only : MOM_error, NOTE, WARNING, FATAL, is_root_pe
 use MOM_file_parser, only : get_param, log_version, param_file_type
 use MOM_grid, only : ocean_grid_type
