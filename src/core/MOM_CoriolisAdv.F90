@@ -16,7 +16,8 @@ use MOM_string_functions, only : uppercase
 use MOM_unit_scaling,  only : unit_scale_type
 use MOM_variables,     only : accel_diag_ptrs
 use MOM_verticalGrid,  only : verticalGrid_type
-use MOM_cpu_clock,     only : cpu_clock_id, cpu_clock_begin, cpu_clock_end
+!use MOM_cpu_clock,     only : cpu_clock_id, cpu_clock_begin, cpu_clock_end
+use mpp_mod, only : mpp_clock_begin, mpp_clock_end, mpp_clock_id
 use MOM_cpu_clock,     only : CLOCK_MODULE, CLOCK_ROUTINE
 
 
@@ -222,7 +223,7 @@ subroutine CorAdCalc(u, v, h, uh, vh, CAu, CAv, OBC, AD, G, GV, US, CS)
 !   v(is-1:ie+2,js-1:je+1), u(is-1:ie+1,js-1:je+2), h(is-1:ie+2,js-1:je+2),
 !   uh(is-1,ie,js:je+1) and vh(is:ie+1,js-1:je).
 
-  call cpu_clock_begin(id_clock_CorAdCalc)
+  call mpp_clock_begin(id_clock_CorAdCalc)
 
   if (.not.associated(CS)) call MOM_error(FATAL, &
          "MOM_CoriolisAdv: Module must be initialized before it is used.")
@@ -838,7 +839,7 @@ subroutine CorAdCalc(u, v, h, uh, vh, CAu, CAv, OBC, AD, G, GV, US, CS)
     if (CS%id_rvxv > 0) call post_data(CS%id_rvxv, AD%rv_x_v, CS%diag)
   endif
 
-  call cpu_clock_end(id_clock_CorAdCalc)
+  call mpp_clock_end(id_clock_CorAdCalc)
 end subroutine CorAdCalc
 
 
@@ -1096,7 +1097,7 @@ subroutine CoriolisAdv_init(Time, G, GV, US, param_file, diag, AD, CS)
      'Zonal Acceleration from Relative Vorticity', 'm-1 s-2', conversion=US%L_T2_to_m_s2)
   if (CS%id_rvxv > 0) call safe_alloc_ptr(AD%rv_x_v,IsdB,IedB,jsd,jed,nz)
 
-  id_clock_CorAdCalc = cpu_clock_id('(Ocean Coriolis Adv Calc)', grain=CLOCK_MODULE)
+  id_clock_CorAdCalc = mpp_clock_id('(Ocean Coriolis Adv Calc)', grain=CLOCK_MODULE)
 end subroutine CoriolisAdv_init
 
 !> Destructor for coriolisadv_cs
