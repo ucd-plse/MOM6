@@ -181,6 +181,12 @@ subroutine MOM_initialize_state(u, v, h, tv, Time, G, GV, US, PF, dirs, &
   integer :: i, j, k, is, ie, js, je, Isq, Ieq, Jsq, Jeq, nz
   integer :: isd, ied, jsd, jed, IsdB, IedB, JsdB, JedB
 
+  ! random perturbation
+  integer :: rndm_seed_sz, clock_for_rng, s
+  integer, dimension(:), allocatable :: rndm_seed
+  real :: init_ts_perturb
+  real :: pertval
+
   is = G%isc ; ie = G%iec ; js = G%jsc ; je = G%jec ; nz = G%ke
   Isq = G%IscB ; Ieq = G%IecB ; Jsq = G%JscB ; Jeq = G%JecB
   isd = G%isd ; ied = G%ied ; jsd = G%jsd ; jed = G%jed
@@ -386,6 +392,39 @@ subroutine MOM_initialize_state(u, v, h, tv, Time, G, GV, US, PF, dirs, &
   endif  ! not from_Z_file.
   if (use_temperature .and. use_OBC) &
     call fill_temp_salt_segments(G, OBC, tv)
+
+  call get_param(PF, mdl, "INIT_TS_PERTURB", init_ts_perturb, &
+             "Max random perturbation to be added to initial temperature.", &
+             default=0.0)
+
+  ! Apply a perturbation to initial T
+  if (init_ts_perturb .ne. 0.0) then
+    call random_seed(size=rndm_seed_sz)
+    allocate(rndm_seed(rndm_seed_sz))
+    do j=js,je
+      do i=is,ie
+        ! seed random_number generator based on global column index
+        !rndm_seed = i + (j-1)*(ie-is+1)
+        !call random_seed(put=rndm_seed)
+
+        ! random seed
+        CALL SYSTEM_CLOCK(COUNT=clock_for_rng)
+        rndm_seed = clock_for_rng + 37 * (/ (s - 1, s = 1, rndm_seed_sz) /)
+        call random_seed(put=rndm_seed)
+
+        do k=1,nz
+          call random_number(pertval)
+          pertval = 2.0*init_ts_perturb*(0.5 - pertval)
+          tv%T(i,j,k) = tv%T(i,j,k) * (1.0+pertval)
+        enddo
+
+        if (i==5 .and. j==5 .and. is_root_pe() ) then
+          print *, "dbg57 ", pertval, i, j
+        endif
+
+      enddo
+    enddo
+  endif
 
   ! The thicknesses in halo points might be needed to initialize the velocities.
   if (new_sim) call pass_var(h, G%Domain)
