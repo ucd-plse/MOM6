@@ -5,7 +5,7 @@ module MOM_diapyc_energy_req
 
 !! \author By Robert Hallberg, May 2015
 
-use MOM_diag_mediator, only : diag_ctrl, Time_type, post_data, register_diag_field
+use MOM_diag_mediator, only : diag_ctrl, time_type, post_data, register_diag_field
 use MOM_error_handler, only : MOM_error, FATAL, WARNING, MOM_mesg, is_root_pe
 use MOM_file_parser, only : get_param, log_version, param_file_type
 use MOM_grid, only : ocean_grid_type

@@ -33,7 +33,9 @@ use horiz_interp_mod, only : horiz_interp_init, horiz_interp_del
 
 use mpp_io_mod, only : mpp_get_axis_data
 use mpp_io_mod, only : MPP_SINGLE
+#ifndef ROSEPREP
 use netcdf
+#endif
 
 implicit none ; private
 

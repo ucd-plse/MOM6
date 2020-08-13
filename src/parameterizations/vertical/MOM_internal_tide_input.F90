@@ -14,7 +14,7 @@ use MOM_forcing_type,     only : forcing
 use MOM_grid,             only : ocean_grid_type
 use MOM_io,               only : slasher, vardesc, MOM_read_data
 use MOM_isopycnal_slopes, only : vert_fill_TS
-use MOM_time_manager,     only : time_type, set_time, operator(+), operator(<=)
+use MOM_time_manager!,     only : time_type, set_time, operator(+), operator(<=)
 use MOM_unit_scaling,     only : unit_scale_type
 use MOM_variables,        only : thermo_var_ptrs, vertvisc_type, p3d
 use MOM_verticalGrid,     only : verticalGrid_type

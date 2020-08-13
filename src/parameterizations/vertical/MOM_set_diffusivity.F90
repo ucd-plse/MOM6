@@ -18,7 +18,7 @@ use MOM_full_convection,     only : full_convection
 use MOM_grid,                only : ocean_grid_type
 use MOM_internal_tides,      only : int_tide_CS, get_lowmode_loss
 use MOM_isopycnal_slopes,    only : vert_fill_TS
-use MOM_tidal_mixing,        only : tidal_mixing_CS, calculate_tidal_mixing
+use MOM_tidal_mixing,        only : tidal_mixing_cs, calculate_tidal_mixing
 use MOM_tidal_mixing,        only : setup_tidal_diagnostics, post_tidal_diagnostics
 use MOM_intrinsic_functions, only : invcosh
 use MOM_io,                  only : slasher, MOM_read_data

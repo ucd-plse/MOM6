@@ -10,7 +10,9 @@ use MOM_io, only : MOM_read_data
 use MOM_EOS, only : EOS_type, calculate_density, calculate_density_derivs
 use MOM_unit_scaling, only : unit_scale_type
 
+#ifndef ROSEPREP
 use netcdf
+#endif
 
 implicit none ; private
 
