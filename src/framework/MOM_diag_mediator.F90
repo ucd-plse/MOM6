@@ -68,7 +68,7 @@ public diag_save_grids, diag_restore_grids
 
 !> Make a diagnostic available for averaging or output.
 interface post_data
-  module procedure post_data_3d, post_data_2d, post_data_1d_k, post_data_0d
+  module procedure post_data_3d, post_data_3d_r4, post_data_2d, post_data_2d_r4, post_data_1d_k, post_data_0d
 end interface post_data
 
 !> Down sample a field
@@ -1323,6 +1323,33 @@ subroutine post_data_2d(diag_field_id, field, diag_cs, is_static, mask)
   if (id_clock_diag_mediator>0) call cpu_clock_end(id_clock_diag_mediator)
 end subroutine post_data_2d
 
+!> Make a real(kind=4) 2-d array diagnostic available for averaging or output
+subroutine post_data_2d_r4(diag_field_id, field, diag_cs, is_static, mask)
+  integer,           intent(in) :: diag_field_id !< The id for an output variable returned by a
+                                                 !! previous call to register_diag_field.
+  real(kind=4),            intent(in) :: field(:,:)    !< 2-d array being offered for output or averaging
+  type(diag_ctrl), target, intent(in) :: diag_CS !< Structure used to regulate diagnostic output
+  logical, optional, intent(in) :: is_static !< If true, this is a static field that is always offered.
+  real,    optional, intent(in) :: mask(:,:) !< If present, use this real array as the data mask.
+
+  ! Local variables
+  type(diag_type), pointer :: diag => null()
+
+  if (id_clock_diag_mediator>0) call cpu_clock_begin(id_clock_diag_mediator)
+
+  ! Iterate over list of diag 'variants' (e.g. CMOR aliases) and post each.
+  call assert(diag_field_id < diag_cs%next_free_diag_id, &
+              'post_data_2d: Unregistered diagnostic id')
+  diag => diag_cs%diags(diag_field_id)
+  do while (associated(diag))
+    call post_data_2d_low(diag, real(field, kind=8), diag_cs, is_static, mask)
+    diag => diag%next
+  enddo
+
+  if (id_clock_diag_mediator>0) call cpu_clock_end(id_clock_diag_mediator)
+end subroutine post_data_2d_r4
+
+
 !> Make a real 2-d array diagnostic available for averaging or output
 !! using a diag_type instead of an integer id.
 subroutine post_data_2d_low(diag, field, diag_cs, is_static, mask)
@@ -1467,6 +1494,16 @@ subroutine post_data_2d_low(diag, field, diag_cs, is_static, mask)
   if ((diag%conversion_factor /= 0.) .and. (diag%conversion_factor /= 1.) .and. dl<2) &
     deallocate( locfield )
 end subroutine post_data_2d_low
+
+!> Make a real 3-d array diagnostic available for averaging or output.
+subroutine post_data_3d_r4(diag_field_id, field, diag_cs)
+  integer,           intent(in) :: diag_field_id !< The id for an output variable returned by a
+                                                 !! previous call to register_diag_field.
+  real(kind=4),            intent(in) :: field(:,:,:)  !< 3-d array being offered for output or averaging
+  type(diag_ctrl), target, intent(in) :: diag_CS !< Structure used to regulate diagnostic output
+
+  call post_data_3d(diag_field_id, real(field, kind=8), diag_cs)
+end subroutine post_data_3d_r4
 
 !> Make a real 3-d array diagnostic available for averaging or output.
 subroutine post_data_3d(diag_field_id, field, diag_cs, is_static, mask, alt_h)
