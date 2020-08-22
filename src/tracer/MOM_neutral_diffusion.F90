@@ -3,7 +3,8 @@ module MOM_neutral_diffusion
 
 ! This file is part of MOM6. See LICENSE.md for the license.
 
-use MOM_cpu_clock,             only : cpu_clock_id, cpu_clock_begin, cpu_clock_end
+!use MOM_cpu_clock,             only : cpu_clock_id, cpu_clock_begin, cpu_clock_end
+use mpp_mod,                   only : mpp_clock_begin, mpp_clock_end, mpp_clock_id
 use MOM_cpu_clock,             only : CLOCK_MODULE, CLOCK_ROUTINE
 use MOM_domains,               only : pass_var
 use MOM_diag_mediator,         only : diag_ctrl, time_type
