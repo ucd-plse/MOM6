@@ -3,6 +3,7 @@ module MOM_continuity
 
 ! This file is part of MOM6. See LICENSE.md for the license.
 
+use mpp_mod, only : mpp_clock_id, mpp_clock_begin, mpp_clock_end, CLOCK_ROUTINE
 use MOM_continuity_PPM, only : continuity_PPM, continuity_PPM_init
 use MOM_continuity_PPM, only : continuity_PPM_stencil
 use MOM_continuity_PPM, only : continuity_PPM_end, continuity_PPM_CS
@@ -21,6 +22,10 @@ implicit none ; private
 #include <MOM_memory.h>
 
 public continuity, continuity_init, continuity_end, continuity_stencil
+
+!>@{ CPU time clock IDs
+integer :: id_clock_ppm
+!>@
 
 !> Control structure for mom_continuity
 type, public :: continuity_CS ; private
@@ -96,8 +101,10 @@ subroutine continuity(u, v, hin, h, uh, vh, dt, G, GV, US, CS, uhbt, vhbt, OBC, 
        " one must be present in call to continuity.")
 
   if (CS%continuity_scheme == PPM_SCHEME) then
+    call mpp_clock_begin(id_clock_ppm)
     call continuity_PPM(u, v, hin, h, uh, vh, dt, G, GV, US, CS%PPM_CSp, uhbt, vhbt, OBC, &
                         visc_rem_u, visc_rem_v, u_cor, v_cor, BT_cont=BT_cont)
+    call mpp_clock_end(id_clock_ppm)
   else
     call MOM_error(FATAL, "continuity: Unrecognized value of continuity_scheme")
   endif
@@ -147,6 +154,8 @@ subroutine continuity_init(Time, G, GV, US, param_file, diag, CS)
   if (CS%continuity_scheme == PPM_SCHEME) then
     call continuity_PPM_init(Time, G, GV, US, param_file, diag, CS%PPM_CSp)
   endif
+
+  id_clock_ppm = mpp_clock_id('(Ocean continuity PPM)', grain=CLOCK_ROUTINE)
 
 end subroutine continuity_init
 
