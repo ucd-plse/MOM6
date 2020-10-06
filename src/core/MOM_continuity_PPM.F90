@@ -3,7 +3,7 @@ module MOM_continuity_PPM
 
 ! This file is part of MOM6. See LICENSE.md for the license.
 
-use MOM_cpu_clock, only : cpu_clock_id, cpu_clock_begin, cpu_clock_end, CLOCK_ROUTINE
+use mpp_mod, only : mpp_clock_id, mpp_clock_begin, mpp_clock_end, CLOCK_ROUTINE
 use MOM_diag_mediator, only : time_type, diag_ctrl
 use MOM_error_handler, only : MOM_error, FATAL, WARNING, is_root_pe
 use MOM_file_parser, only : get_param, log_version, param_file_type
@@ -151,14 +151,14 @@ subroutine continuity_PPM(u, v, hin, h, uh, vh, dt, G, GV, US, CS, uhbt, vhbt, O
     LB%jsh = G%jsc-stencil ; LB%jeh = G%jec+stencil
     call zonal_mass_flux(u, hin, uh, dt, G, GV, US, CS, LB, uhbt, OBC, visc_rem_u, u_cor, BT_cont)
 
-    call cpu_clock_begin(id_clock_update)
+    call mpp_clock_begin(id_clock_update)
     !$OMP parallel do default(shared)
     do k=1,nz ; do j=LB%jsh,LB%jeh ; do i=LB%ish,LB%ieh
       h(i,j,k) = hin(i,j,k) - dt * G%IareaT(i,j) * (uh(I,j,k) - uh(I-1,j,k))
   !   Uncomment this line to prevent underflow.
   !   if (h(i,j,k) < h_min) h(i,j,k) = h_min
     enddo ; enddo ; enddo
-    call cpu_clock_end(id_clock_update)
+    call mpp_clock_end(id_clock_update)
 
     LB%ish = G%isc ; LB%ieh = G%iec ; LB%jsh = G%jsc ; LB%jeh = G%jec
 
@@ -166,14 +166,14 @@ subroutine continuity_PPM(u, v, hin, h, uh, vh, dt, G, GV, US, CS, uhbt, vhbt, O
     !  the fluxes.
     call meridional_mass_flux(v, h, vh, dt, G, GV, US, CS, LB, vhbt, OBC, visc_rem_v, v_cor, BT_cont)
 
-    call cpu_clock_begin(id_clock_update)
+    call mpp_clock_begin(id_clock_update)
     !$OMP parallel do default(shared)
     do k=1,nz ; do j=LB%jsh,LB%jeh ; do i=LB%ish,LB%ieh
       h(i,j,k) = h(i,j,k) - dt * G%IareaT(i,j) * (vh(i,J,k) - vh(i,J-1,k))
   !   This line prevents underflow.
       if (h(i,j,k) < h_min) h(i,j,k) = h_min
     enddo ; enddo ; enddo
-    call cpu_clock_end(id_clock_update)
+    call mpp_clock_end(id_clock_update)
 
   else  ! .not. x_first
   !    First, advect meridionally, so set the loop bounds accordingly.
@@ -182,26 +182,26 @@ subroutine continuity_PPM(u, v, hin, h, uh, vh, dt, G, GV, US, CS, uhbt, vhbt, O
 
     call meridional_mass_flux(v, hin, vh, dt, G, GV, US, CS, LB, vhbt, OBC, visc_rem_v, v_cor, BT_cont)
 
-    call cpu_clock_begin(id_clock_update)
+    call mpp_clock_begin(id_clock_update)
     !$OMP parallel do default(shared)
     do k=1,nz ; do j=LB%jsh,LB%jeh ; do i=LB%ish,LB%ieh
       h(i,j,k) = hin(i,j,k) - dt * G%IareaT(i,j) * (vh(i,J,k) - vh(i,J-1,k))
     enddo ; enddo ; enddo
-    call cpu_clock_end(id_clock_update)
+    call mpp_clock_end(id_clock_update)
 
   !    Now advect zonally, using the updated thicknesses to determine
   !  the fluxes.
     LB%ish = G%isc ; LB%ieh = G%iec ; LB%jsh = G%jsc ; LB%jeh = G%jec
     call zonal_mass_flux(u, h, uh, dt, G, GV, US, CS, LB, uhbt, OBC, visc_rem_u, u_cor, BT_cont)
 
-    call cpu_clock_begin(id_clock_update)
+    call mpp_clock_begin(id_clock_update)
     !$OMP parallel do default(shared)
     do k=1,nz ; do j=LB%jsh,LB%jeh ; do i=LB%ish,LB%ieh
       h(i,j,k) = h(i,j,k) - dt * G%IareaT(i,j) * (uh(I,j,k) - uh(I-1,j,k))
       ! This line prevents underflow.
       if (h(i,j,k) < h_min) h(i,j,k) = h_min
     enddo ; enddo ; enddo
-    call cpu_clock_end(id_clock_update)
+    call mpp_clock_end(id_clock_update)
 
   endif
 
@@ -282,7 +282,7 @@ subroutine zonal_mass_flux(u, h_in, uh, dt, G, GV, US, CS, LB, uhbt, OBC, &
   I_dt = 1.0 / dt
   if (CS%aggress_adjust) CFL_dt = I_dt
 
-  call cpu_clock_begin(id_clock_update)
+  call mpp_clock_begin(id_clock_update)
 !$OMP parallel do default(none) shared(ish,ieh,jsh,jeh,nz,CS,h_L,h_in,h_R,G,GV,LB,visc_rem,OBC)
   do k=1,nz
     ! This sets h_L and h_R.
@@ -296,9 +296,9 @@ subroutine zonal_mass_flux(u, h_in, uh, dt, G, GV, US, CS, LB, uhbt, OBC, &
     endif
     do I=ish-1,ieh ; visc_rem(I,k) = 1.0 ; enddo
   enddo
-  call cpu_clock_end(id_clock_update)
+  call mpp_clock_end(id_clock_update)
 
-  call cpu_clock_begin(id_clock_correct)
+  call mpp_clock_begin(id_clock_correct)
 !$OMP parallel do default(none) shared(ish,ieh,jsh,jeh,nz,u,h_in,h_L,h_R,use_visc_rem,visc_rem_u,  &
 !$OMP                                  uh,dt,US,G,GV,CS,local_specified_BC,OBC,uhbt,set_BT_cont,    &
 !$OMP                                  CFL_dt,I_dt,u_cor,BT_cont, local_Flather_OBC) &
@@ -483,7 +483,7 @@ subroutine zonal_mass_flux(u, h_in, uh, dt, G, GV, US, CS, LB, uhbt, OBC, &
       endif
     enddo
   endif
-  call cpu_clock_end(id_clock_correct)
+  call mpp_clock_end(id_clock_correct)
 
   if  (set_BT_cont) then ; if (allocated(BT_cont%h_u)) then
     if (present(u_cor)) then
@@ -1121,7 +1121,7 @@ subroutine meridional_mass_flux(v, h_in, vh, dt, G, GV, US, CS, LB, vhbt, OBC, &
   I_dt = 1.0 / dt
   if (CS%aggress_adjust) CFL_dt = I_dt
 
-  call cpu_clock_begin(id_clock_update)
+  call mpp_clock_begin(id_clock_update)
 !$OMP parallel do default(none) shared(nz,ish,ieh,jsh,jeh,h_in,h_L,h_R,G,GV,LB,CS,visc_rem,OBC)
   do k=1,nz
     ! This sets h_L and h_R.
@@ -1135,9 +1135,9 @@ subroutine meridional_mass_flux(v, h_in, vh, dt, G, GV, US, CS, LB, vhbt, OBC, &
     endif
     do i=ish,ieh ; visc_rem(i,k) = 1.0 ; enddo
   enddo
-  call cpu_clock_end(id_clock_update)
+  call mpp_clock_end(id_clock_update)
 
-  call cpu_clock_begin(id_clock_correct)
+  call mpp_clock_begin(id_clock_correct)
 !$OMP parallel do default(none) shared(ish,ieh,jsh,jeh,nz,v,h_in,h_L,h_R,vh,use_visc_rem, &
 !$OMP                                  visc_rem_v,dt,US,G,GV,CS,local_specified_BC,OBC,vhbt, &
 !$OMP                                  set_BT_cont,CFL_dt,I_dt,v_cor,BT_cont, local_Flather_OBC ) &
@@ -1318,7 +1318,7 @@ subroutine meridional_mass_flux(v, h_in, vh, dt, G, GV, US, CS, LB, vhbt, OBC, &
       endif
     enddo
   endif
-  call cpu_clock_end(id_clock_correct)
+  call mpp_clock_end(id_clock_correct)
 
   if (set_BT_cont) then ; if (allocated(BT_cont%h_v)) then
     if (present(v_cor)) then
@@ -2317,8 +2317,8 @@ subroutine continuity_PPM_init(Time, G, GV, US, param_file, diag, CS)
 
   CS%diag => diag
 
-  id_clock_update = cpu_clock_id('(Ocean continuity update)', grain=CLOCK_ROUTINE)
-  id_clock_correct = cpu_clock_id('(Ocean continuity correction)', grain=CLOCK_ROUTINE)
+  id_clock_update = mpp_clock_id('(Ocean continuity update)', grain=CLOCK_ROUTINE)
+  id_clock_correct = mpp_clock_id('(Ocean continuity correction)', grain=CLOCK_ROUTINE)
 
 end subroutine continuity_PPM_init
 
