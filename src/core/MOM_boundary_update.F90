@@ -154,15 +154,15 @@ subroutine update_OBC_data(OBC, G, GV, US, tv, h, CS, Time)
 end subroutine update_OBC_data
 
 !> Clean up the OBC registry.
-!subroutine OBC_register_end(CS)
-!  type(update_OBC_CS),       pointer    :: CS !< Control structure for OBCs
-!
-!  if (CS%use_files) call file_OBC_end(CS%file_OBC_CSp)
-!  if (CS%use_tidal_bay) call tidal_bay_OBC_end(CS%tidal_bay_OBC_CSp)
-!  if (CS%use_Kelvin) call Kelvin_OBC_end(CS%Kelvin_OBC_CSp)
-!
-!  if (associated(CS)) deallocate(CS)
-!end subroutine OBC_register_end
+subroutine OBC_register_end(CS)
+  type(update_OBC_CS),       pointer    :: CS !< Control structure for OBCs
+
+  if (CS%use_files) call file_OBC_end(CS%file_OBC_CSp)
+  if (CS%use_tidal_bay) call tidal_bay_OBC_end(CS%tidal_bay_OBC_CSp)
+  if (CS%use_Kelvin) call Kelvin_OBC_end(CS%Kelvin_OBC_CSp)
+
+  if (associated(CS)) deallocate(CS)
+end subroutine OBC_register_end
 
 !> \namespace mom_boundary_update
 !! This module updates the open boundary arrays when time-varying.
