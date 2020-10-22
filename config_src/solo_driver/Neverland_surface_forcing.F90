@@ -12,7 +12,7 @@ use MOM_forcing_type, only : forcing, mech_forcing
 use MOM_forcing_type, only : allocate_forcing_type, allocate_mech_forcing
 use MOM_grid, only : ocean_grid_type
 use MOM_io, only : file_exists, read_data, slasher
-use MOM_time_manager, only : time_type, operator(+), operator(/)
+use MOM_time_manager!, only : time_type, operator(+), operator(/)
 use MOM_unit_scaling, only : unit_scale_type
 use MOM_variables, only : surface
 

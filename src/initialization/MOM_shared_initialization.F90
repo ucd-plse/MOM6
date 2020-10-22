@@ -17,7 +17,9 @@ use MOM_io, only : slasher, vardesc, write_field, var_desc
 use MOM_string_functions, only : uppercase
 use MOM_unit_scaling, only : unit_scale_type
 
+#ifndef ROSEPREP
 use netcdf
+#endif
 
 implicit none ; private
 
@@ -201,6 +203,8 @@ subroutine apply_topography_edits_from_file(D, G, param_file, US)
 
   m_to_Z = 1.0 ; if (present(US)) m_to_Z = US%m_to_Z
 
+  #ifndef ROSEPREP
+
   call get_param(param_file, mdl, "INPUTDIR", inputdir, default=".")
   inputdir = slasher(inputdir)
   call get_param(param_file, mdl, "TOPO_EDITS_FILE", topo_edits_file, &
@@ -293,6 +297,8 @@ subroutine apply_topography_edits_from_file(D, G, param_file, US)
   enddo
 
   deallocate( ig, jg, new_depth )
+
+  #endif
 
   call callTree_leave(trim(mdl)//'()')
 end subroutine apply_topography_edits_from_file
@@ -868,7 +874,7 @@ subroutine reset_face_lengths_list(G, param_file, US)
 
     ! Find an unused unit number.
     do iounit=10,512
-      INQUIRE(iounit,OPENED=unit_in_use) ; if (.not.unit_in_use) exit
+      INQUIRE(unit=iounit,opened=unit_in_use) ; if (.not.unit_in_use) exit
     enddo
     if (iounit >= 512) call MOM_error(FATAL, &
         "reset_face_lengths_list: No unused file unit could be found.")

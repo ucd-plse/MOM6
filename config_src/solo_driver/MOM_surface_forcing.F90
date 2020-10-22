@@ -32,7 +32,7 @@ use MOM_io,                  only : file_exists, MOM_read_data, MOM_read_vector,
 use MOM_io,                  only : EAST_FACE, NORTH_FACE, num_timelevels
 use MOM_restart,             only : register_restart_field, restart_init, MOM_restart_CS
 use MOM_restart,             only : restart_init_end, save_restart, restore_state
-use MOM_time_manager,        only : time_type, operator(+), operator(/), get_time, time_type_to_real
+use MOM_time_manager!,        only : time_type, operator(+), operator(/), get_time, time_type_to_real
 use MOM_tracer_flow_control, only : call_tracer_set_forcing
 use MOM_tracer_flow_control, only : tracer_flow_control_CS
 use MOM_unit_scaling,        only : unit_scale_type

@@ -91,6 +91,7 @@ subroutine call_OBC_register(param_file, CS, OBC)
                  "If true, use the dyed channel open boundary.", &
                  default=.false.)
 
+#ifndef ROSEPREP
   if (CS%use_files) CS%use_files = &
     register_file_OBC(param_file, CS%file_OBC_CSp, &
                OBC%OBC_Reg)
@@ -106,6 +107,7 @@ subroutine call_OBC_register(param_file, CS, OBC)
   if (CS%use_dyed_channel) CS%use_dyed_channel = &
     register_dyed_channel_OBC(param_file, CS%dyed_channel_OBC_CSp, &
                OBC%OBC_Reg)
+#endif
 
 end subroutine call_OBC_register
 
@@ -134,6 +136,7 @@ subroutine update_OBC_data(OBC, G, GV, US, tv, h, CS, Time)
   isd = G%isd ; ied = G%ied ; jsd = G%jsd ; jed = G%jed
   IsdB = G%IsdB ; IedB = G%IedB ; JsdB = G%JsdB ; JedB = G%JedB
 
+#ifndef ROSEPREP
 ! Something here... with CS%file_OBC_CSp?
 ! if (CS%use_files) &
 !     call update_OBC_segment_data(G, GV, OBC, tv, h, Time)
@@ -147,19 +150,19 @@ subroutine update_OBC_data(OBC, G, GV, US, tv, h, CS, Time)
       call dyed_channel_update_flow(OBC, CS%dyed_channel_OBC_CSp, G, Time)
   if (OBC%needs_IO_for_data)  &
       call update_OBC_segment_data(G, GV, US, OBC, tv, h, Time)
-
+#endif
 end subroutine update_OBC_data
 
 !> Clean up the OBC registry.
-subroutine OBC_register_end(CS)
-  type(update_OBC_CS),       pointer    :: CS !< Control structure for OBCs
-
-  if (CS%use_files) call file_OBC_end(CS%file_OBC_CSp)
-  if (CS%use_tidal_bay) call tidal_bay_OBC_end(CS%tidal_bay_OBC_CSp)
-  if (CS%use_Kelvin) call Kelvin_OBC_end(CS%Kelvin_OBC_CSp)
-
-  if (associated(CS)) deallocate(CS)
-end subroutine OBC_register_end
+!subroutine OBC_register_end(CS)
+!  type(update_OBC_CS),       pointer    :: CS !< Control structure for OBCs
+!
+!  if (CS%use_files) call file_OBC_end(CS%file_OBC_CSp)
+!  if (CS%use_tidal_bay) call tidal_bay_OBC_end(CS%tidal_bay_OBC_CSp)
+!  if (CS%use_Kelvin) call Kelvin_OBC_end(CS%Kelvin_OBC_CSp)
+!
+!  if (associated(CS)) deallocate(CS)
+!end subroutine OBC_register_end
 
 !> \namespace mom_boundary_update
 !! This module updates the open boundary arrays when time-varying.

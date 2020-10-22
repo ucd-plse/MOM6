@@ -17,9 +17,9 @@ use MOM_forcing_type, only : forcing
 use MOM_grid, only : ocean_grid_type
 use MOM_io, only : vardesc, var_desc
 use MOM_restart, only : register_restart_field, MOM_restart_CS
-use MOM_time_manager, only : time_type, operator(+), operator(/), operator(-)
-use MOM_time_manager, only : get_date, set_date
-use MOM_time_manager, only : time_type_to_real, real_to_time
+use MOM_time_manager!, only : time_type, operator(+), operator(/), operator(-)
+!use MOM_time_manager, only : get_date, set_date
+!use MOM_time_manager, only : time_type_to_real, real_to_time
 use MOM_unit_scaling, only : unit_scale_type
 use MOM_variables, only : surface
 

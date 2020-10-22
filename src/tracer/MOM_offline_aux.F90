@@ -6,7 +6,7 @@ module MOM_offline_aux
 
 use mpp_domains_mod,      only : CENTER, CORNER, NORTH, EAST
 use data_override_mod,    only : data_override_init, data_override
-use MOM_time_manager,     only : time_type, operator(-)
+use MOM_time_manager!,     only : time_type, operator(-)
 use MOM_debugging,        only : check_column_integrals
 use MOM_domains,          only : pass_var, pass_vector, To_All
 use MOM_diag_vkernels,    only : reintegrate_column

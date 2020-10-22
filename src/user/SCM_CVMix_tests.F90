@@ -11,7 +11,7 @@ use MOM_grid,          only : ocean_grid_type
 use MOM_verticalgrid,  only : verticalGrid_type
 use MOM_safe_alloc,    only : safe_alloc_ptr
 use MOM_unit_scaling,  only : unit_scale_type
-use MOM_time_manager,  only : time_type, operator(+), operator(/), time_type_to_real
+use MOM_time_manager!,  only : time_type, operator(+), operator(/), time_type_to_real
 use MOM_unit_scaling,  only : unit_scale_type
 use MOM_variables,     only : thermo_var_ptrs, surface
 

@@ -17,7 +17,7 @@ use MOM_get_input, only : directories
 use MOM_grid, only : ocean_grid_type
 use MOM_io, only : open_file
 use MOM_io, only : APPEND_FILE, ASCII_FILE, MULTIPLE, SINGLE_FILE
-use MOM_time_manager, only : time_type, get_time, get_date, set_date, operator(-)
+use MOM_time_manager!, only : time_type, get_time, get_date, set_date, operator(-)
 use MOM_unit_scaling, only : unit_scale_type
 use MOM_variables, only : ocean_internal_state, accel_diag_ptrs, cont_diag_ptrs
 use MOM_verticalGrid, only : verticalGrid_type

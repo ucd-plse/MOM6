@@ -4,9 +4,9 @@ module MOM_sum_output
 ! This file is part of MOM6. See LICENSE.md for the license.
 
 !use iso_fortran_env, only : int64
-use MOM_coms, only : sum_across_PEs, PE_here, root_PE, num_PEs, max_across_PEs
-use MOM_coms, only : reproducing_sum, reproducing_sum_EFP, EFP_to_real, real_to_EFP
-use MOM_coms, only : EFP_type, operator(+), operator(-), assignment(=), EFP_sum_across_PEs
+use MOM_coms!, only : sum_across_PEs, PE_here, root_PE, num_PEs, max_across_PEs
+!use MOM_coms, only : reproducing_sum, reproducing_sum_EFP, EFP_to_real, real_to_EFP
+!use MOM_coms, only : EFP_type, operator(+), operator(-), assignment(=), EFP_sum_across_PEs
 use MOM_error_handler, only : MOM_error, FATAL, WARNING, is_root_pe, MOM_mesg
 use MOM_file_parser, only : get_param, log_param, log_version, param_file_type
 use MOM_forcing_type, only : forcing
@@ -17,17 +17,19 @@ use MOM_io, only : file_exists, slasher, vardesc, var_desc, write_field, get_fil
 use MOM_io, only : APPEND_FILE, ASCII_FILE, SINGLE_FILE, WRITEONLY_FILE
 use MOM_open_boundary, only : ocean_OBC_type, OBC_segment_type
 use MOM_open_boundary, only : OBC_DIRECTION_E, OBC_DIRECTION_W, OBC_DIRECTION_N, OBC_DIRECTION_S
-use MOM_time_manager, only : time_type, get_time, get_date, set_time, operator(>)
-use MOM_time_manager, only : operator(+), operator(-), operator(*), operator(/)
-use MOM_time_manager, only : operator(/=), operator(<=), operator(>=), operator(<)
-use MOM_time_manager, only : get_calendar_type, time_type_to_real, NO_CALENDAR
+use MOM_time_manager!, only : time_type, get_time, get_date, set_time, operator(>)
+!use MOM_time_manager, only : operator(+), operator(-), operator(*), operator(/)
+!use MOM_time_manager, only : operator(/=), operator(<=), operator(>=), operator(<)
+!use MOM_time_manager, only : get_calendar_type, time_type_to_real, NO_CALENDAR
 use MOM_tracer_flow_control, only : tracer_flow_control_CS, call_tracer_stocks
 use MOM_unit_scaling, only : unit_scale_type
 use MOM_variables, only : surface, thermo_var_ptrs
 use MOM_verticalGrid, only : verticalGrid_type
 use mpp_mod, only : mpp_chksum
 
+#ifndef ROSEPREP
 use netcdf
+#endif
 
 implicit none ; private
 

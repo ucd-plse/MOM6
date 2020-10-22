@@ -41,7 +41,9 @@ use shelfwave_initialization, only : shelfwave_initialize_topography
 use Phillips_initialization, only : Phillips_initialize_topography
 use dense_water_initialization, only : dense_water_initialize_topography
 
+#ifndef ROSEPREP
 use netcdf
+#endif
 
 implicit none ; private
 
