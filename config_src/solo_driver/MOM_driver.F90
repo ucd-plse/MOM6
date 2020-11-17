@@ -48,13 +48,13 @@ program MOM_main
   use MOM_string_functions,only : uppercase
   use MOM_surface_forcing, only : set_forcing, forcing_save_restart
   use MOM_surface_forcing, only : surface_forcing_init, surface_forcing_CS
-  use MOM_time_manager,    only : time_type, set_date, get_date
-  use MOM_time_manager,    only : real_to_time, time_type_to_real
-  use MOM_time_manager,    only : operator(+), operator(-), operator(*), operator(/)
-  use MOM_time_manager,    only : operator(>), operator(<), operator(>=)
-  use MOM_time_manager,    only : increment_date, set_calendar_type, month_name
-  use MOM_time_manager,    only : JULIAN, GREGORIAN, NOLEAP, THIRTY_DAY_MONTHS
-  use MOM_time_manager,    only : NO_CALENDAR
+  use MOM_time_manager!,    only : time_type, set_date, get_date
+  !use MOM_time_manager,    only : real_to_time, time_type_to_real
+  !use MOM_time_manager,    only : operator(+), operator(-), operator(*), operator(/)
+  !use MOM_time_manager,    only : operator(>), operator(<), operator(>=)
+  !use MOM_time_manager,    only : increment_date, set_calendar_type, month_name
+  !use MOM_time_manager,    only : JULIAN, GREGORIAN, NOLEAP, THIRTY_DAY_MONTHS
+  !use MOM_time_manager,    only : NO_CALENDAR
   use MOM_tracer_flow_control, only : tracer_flow_control_CS
   use MOM_unit_scaling,    only : unit_scale_type
   use MOM_variables,       only : surface
@@ -248,7 +248,7 @@ program MOM_main
     call close_file(unit)
     ierr = check_nml_error(io_status,'ocean_solo_nml')
     if (years+months+days+hours+minutes+seconds > 0) then
-      if (is_root_pe()) write(*,ocean_solo_nml)
+      if (is_root_pe()) write(unit=*,nml=ocean_solo_nml)
     endif
   endif
 
@@ -647,7 +647,7 @@ program MOM_main
 
   if (is_root_pe()) then
     do unit=10,1967
-      INQUIRE(unit,OPENED=unit_in_use)
+      INQUIRE(unit=unit,OPENED=unit_in_use)
       if (.not.unit_in_use) exit
     enddo
     open(unit,FILE="exitcode",FORM="FORMATTED",STATUS="REPLACE",action="WRITE")
