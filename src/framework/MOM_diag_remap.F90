@@ -57,8 +57,8 @@ module MOM_diag_remap
 
 ! This file is part of MOM6. See LICENSE.md for the license.
 
-use MOM_coms,             only : reproducing_sum_EFP, EFP_to_real
-use MOM_coms,             only : EFP_type, assignment(=), EFP_sum_across_PEs
+use MOM_coms!,             only : reproducing_sum_EFP, EFP_to_real
+!use MOM_coms,             only : EFP_type, assignment(=), EFP_sum_across_PEs
 use MOM_error_handler,    only : MOM_error, FATAL, assert, WARNING
 use MOM_diag_vkernels,    only : interpolate_column, reintegrate_column
 use MOM_file_parser,      only : get_param, log_param, param_file_type
