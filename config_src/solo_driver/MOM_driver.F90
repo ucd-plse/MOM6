@@ -449,10 +449,10 @@ program MOM_main
                    threading=SINGLE_FILE)
     call get_date(Time, date(1), date(2), date(3), date(4), date(5), date(6))
     month = month_name(date(2))
-    if (is_root_pe()) write(unit,'(6i4,2x,a3)') date, month(1:3)
+    if (is_root_pe()) write(unit=unit,fmt='(6i4,2x,a3)') date, month(1:3)
     call get_date(Time_end, date(1), date(2), date(3), date(4), date(5), date(6))
     month = month_name(date(2))
-    if (is_root_pe()) write(unit,'(6i4,2x,a3)') date, month(1:3)
+    if (is_root_pe()) write(unit=unit,fmt='(6i4,2x,a3)') date, month(1:3)
     call close_file(unit)
   endif
 
@@ -632,14 +632,14 @@ program MOM_main
     ! Write ocean solo restart file.
     call open_file(unit, trim(dirs%restart_output_dir)//'ocean_solo.res', nohdrs=.true.)
     if (is_root_pe())then
-        write(unit, '(i6,8x,a)') calendar_type, &
+        write(unit=unit, fmt='(i6,8x,a)') calendar_type, &
              '(Calendar: no_calendar=0, thirty_day_months=1, julian=2, gregorian=3, noleap=4)'
 
         call get_date(Start_time, yr, mon, day, hr, mins, sec)
-        write(unit, '(6i6,8x,a)') yr, mon, day, hr, mins, sec, &
+        write(unit=unit, fmt='(6i6,8x,a)') yr, mon, day, hr, mins, sec, &
              'Model start time:   year, month, day, hour, minute, second'
         call get_date(Time, yr, mon, day, hr, mins, sec)
-        write(unit, '(6i6,8x,a)') yr, mon, day, hr, mins, sec, &
+        write(unit=unit, fmt='(6i6,8x,a)') yr, mon, day, hr, mins, sec, &
              'Current model time: year, month, day, hour, minute, second'
     endif
     call close_file(unit)
@@ -652,9 +652,9 @@ program MOM_main
     enddo
     open(unit,FILE="exitcode",FORM="FORMATTED",STATUS="REPLACE",action="WRITE")
     if (Time < daymax) then
-      write(unit,*) 9
+      write(unit=unit,fmt=*) 9
     else
-      write(unit,*) 0
+      write(unit=unit,fmt=*) 0
     endif
     close(unit)
   endif
