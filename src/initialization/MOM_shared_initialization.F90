@@ -203,7 +203,7 @@ subroutine apply_topography_edits_from_file(D, G, param_file, US)
 
   m_to_Z = 1.0 ; if (present(US)) m_to_Z = US%m_to_Z
 
-  #ifndef ROSEPREP
+#ifndef ROSEPREP
 
   call get_param(param_file, mdl, "INPUTDIR", inputdir, default=".")
   inputdir = slasher(inputdir)
@@ -298,7 +298,7 @@ subroutine apply_topography_edits_from_file(D, G, param_file, US)
 
   deallocate( ig, jg, new_depth )
 
-  #endif
+#endif
 
   call callTree_leave(trim(mdl)//'()')
 end subroutine apply_topography_edits_from_file
