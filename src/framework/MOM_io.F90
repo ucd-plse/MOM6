@@ -18,7 +18,7 @@ use fms_mod,              only : write_version_number, open_namelist_file, check
 use fms_io_mod,           only : file_exist, field_size, read_data
 use fms_io_mod,           only : field_exists => field_exist, io_infra_end=>fms_io_exit
 use fms_io_mod,           only : get_filename_appendix => get_filename_appendix
-use mpp_domains_mod,      only : domain1d, domain2d, mpp_get_domain_components
+use mpp_domains_mod,      only : domain1D, domain2D, mpp_get_domain_components
 use mpp_domains_mod,      only : CENTER, CORNER, NORTH_FACE=>NORTH, EAST_FACE=>EAST
 use mpp_io_mod,           only : open_file => mpp_open, close_file => mpp_close
 use mpp_io_mod,           only : mpp_write_meta, write_field => mpp_write, mpp_get_info
