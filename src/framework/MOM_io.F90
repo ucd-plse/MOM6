@@ -119,7 +119,7 @@ subroutine create_file(unit, filename, vars, novars, fields, threading, timeunit
   type(axistype) :: axis_layer, axis_int, axis_time, axis_periodic
   type(axistype) :: axes(4)
   type(MOM_domain_type), pointer :: Domain => NULL()
-  type(domain1d) :: x_domain, y_domain
+  type(domain1D) :: x_domain, y_domain
   integer        :: numaxes, pack, thread, k
   integer        :: isg, ieg, jsg, jeg, IsgB, IegB, JsgB, JegB
   integer        :: var_periods, num_periods=0
@@ -839,7 +839,7 @@ end function MOM_file_exists
 !> Returns true if the named file or its domain-decomposed variant exists.
 function FMS_file_exists(filename, domain, no_domain)
   character(len=*), intent(in)         :: filename  !< The name of the file being inquired about
-  type(domain2d), optional, intent(in) :: domain    !< The mpp domain2d that describes the decomposition
+  type(domain2D), optional, intent(in) :: domain    !< The mpp domain2d that describes the decomposition
   logical,        optional, intent(in) :: no_domain !< This file does not use domain decomposition
 ! This function uses the fms_io function file_exist to determine whether
 ! a named file (or its decomposed variant) exists.
