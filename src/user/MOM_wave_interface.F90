@@ -6,6 +6,7 @@ module MOM_wave_interface
 use MOM_data_override, only : data_override_init, data_override
 use MOM_diag_mediator, only : post_data, register_diag_field, safe_alloc_alloc
 use MOM_diag_mediator, only : diag_ctrl
+use MOM_diag_mediator, only : axes_grp, define_axes_group, diag_axis_init
 use MOM_domains,       only : pass_var, pass_vector, AGRID
 use MOM_domains,       only : To_South, To_West, To_All
 use MOM_error_handler, only : MOM_error, FATAL, WARNING
@@ -207,6 +208,7 @@ type, public :: wave_parameters_CS ; private
   integer :: id_P_deltaStokes_L = -1, id_P_deltaStokes_i = -1
   integer :: id_surfacestokes_x = -1 , id_surfacestokes_y = -1
   integer :: id_3dstokes_x = -1 , id_3dstokes_y = -1
+  integer :: id_pstokes_x = -1, id_pstokes_y = -1
   integer :: id_ddt_3dstokes_x = -1 , id_ddt_3dstokes_y = -1
   integer :: id_La_turb = -1
   !>@}
@@ -252,6 +254,8 @@ subroutine MOM_wave_interface_init(time, G, GV, US, param_file, CS, diag, restar
   character*(5), parameter  :: INPUT_STRING     = "INPUT"
   logical :: use_waves
   logical :: StatisticalWaves
+  type(axes_grp) :: axes_Cvk, axes_Cuk
+  integer :: id_b
 
   ! Dummy Check
   if (.not. associated(CS)) then
@@ -476,6 +480,13 @@ subroutine MOM_wave_interface_init(time, G, GV, US, param_file, CS, diag, restar
     allocate(CS%KvS(G%isd:G%Ied,G%jsd:G%jed,GV%ke), source=0.0)
   endif
 
+  id_b = diag_axis_init('b', CS%WaveNum_Cen, "nondim", 'N', &
+       'Central wavenumber bands for surface Stokes drift partitions')
+  call define_axes_group(diag, (/diag%axesCv1%handles(1), diag%axesCv1%handles(2), id_b/), axes_Cvk, &
+       x_cell_method='mean', y_cell_method='point', is_v_point=.true.)
+  call define_axes_group(diag, (/diag%axesCu1%handles(1), diag%axesCu1%handles(2), id_b/), axes_Cuk, &
+       x_cell_method='point', y_cell_method='mean', is_u_point=.true.)
+
   ! Initialize Wave related outputs
   CS%id_surfacestokes_y = register_diag_field('ocean_model','surface_stokes_y', &
        CS%diag%axesCv1,Time,'Surface Stokes drift (y)', 'm s-1', conversion=US%L_T_to_m_s)
@@ -485,6 +496,10 @@ subroutine MOM_wave_interface_init(time, G, GV, US, param_file, CS, diag, restar
        CS%diag%axesCvL,Time,'3d Stokes drift (y)', 'm s-1', conversion=US%L_T_to_m_s)
   CS%id_3dstokes_x = register_diag_field('ocean_model','3d_stokes_x', &
        CS%diag%axesCuL,Time,'3d Stokes drift (x)', 'm s-1', conversion=US%L_T_to_m_s)
+  CS%id_pstokes_y = register_diag_field('ocean_model','pstokes_y', &
+       axes_Cvk,Time,'Surface Stokes drift partitions (y)', 'm s-1', conversion=US%L_T_to_m_s)
+  CS%id_pstokes_x = register_diag_field('ocean_model','pstokes_x', &
+       axes_Cvk,Time,'Surface Stokes drift partitions (x)', 'm s-1', conversion=US%L_T_to_m_s)
   if (CS%Stokes_DDT) then
     CS%id_ddt_3dstokes_y = register_diag_field('ocean_model','dvdt_Stokes', &
          CS%diag%axesCvL,Time,'d/dt Stokes drift (meridional)','m s-2')
@@ -878,6 +893,10 @@ subroutine Update_Stokes_Drift(G, GV, US, CS, h, ustar, dt, dynamics_step)
     call post_data(CS%id_3dstokes_y, CS%us_y, CS%diag)
   if (CS%id_3dstokes_x>0) &
     call post_data(CS%id_3dstokes_x, CS%us_x, CS%diag)
+  if (CS%id_pstokes_y>0) &
+    call post_data(CS%id_pstokes_y, CS%stky0, CS%diag)
+  if (CS%id_pstokes_x>0) &
+    call post_data(CS%id_pstokes_x, CS%stkx0, CS%diag)
   if (CS%Stokes_DDT) then
     if (CS%id_ddt_3dstokes_x>0) &
       call post_data(CS%id_ddt_3dstokes_x, CS%ddt_us_x, CS%diag)
