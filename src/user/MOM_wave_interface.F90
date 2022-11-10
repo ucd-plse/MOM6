@@ -178,6 +178,14 @@ type, public :: wave_parameters_CS ; private
     STKy0              !< Stokes Drift spectrum (meridional) [L T-1 ~> m s-1]
                        !! Horizontal -> V points
                        !! 3rd dimension -> Freq/Wavenumber
+  real, allocatable, dimension(:,:,:,:) :: &
+    CMN_FAC_x          !< Depth-dependent decay factor for zonal Stokes drift components [nondim]
+                       !! Horizontal -> U points
+                       !! 4th dimension -> Freq/Wavenumber
+  real, allocatable, dimension(:,:,:,:) :: &
+    CMN_FAC_y          !< Depth-dependent decay factor for meridional Stokes drift components [nondim]
+                       !! Horizontal -> V points
+                       !! 4th dimension -> Freq/Wavenumber
 
   !> An arbitrary lower-bound on the Langmuir number.  Run-time parameter.
   !! Langmuir number is sqrt(u_star/u_stokes). When both are small
@@ -208,7 +216,8 @@ type, public :: wave_parameters_CS ; private
   integer :: id_P_deltaStokes_L = -1, id_P_deltaStokes_i = -1
   integer :: id_surfacestokes_x = -1 , id_surfacestokes_y = -1
   integer :: id_3dstokes_x = -1 , id_3dstokes_y = -1
-  integer :: id_pstokes_x = -1, id_pstokes_y = -1
+  integer, allocatable, dimension(:) :: id_pstokes_x, id_pstokes_y
+  integer, allocatable, dimension(:) :: id_pstokes_y_fac, id_pstokes_x_fac
   integer :: id_ddt_3dstokes_x = -1 , id_ddt_3dstokes_y = -1
   integer :: id_La_turb = -1
   !>@}
@@ -255,7 +264,7 @@ subroutine MOM_wave_interface_init(time, G, GV, US, param_file, CS, diag, restar
   logical :: use_waves
   logical :: StatisticalWaves
   type(axes_grp) :: axes_Cvk, axes_Cuk
-  integer :: id_b
+  integer :: b, id_b
 
   ! Dummy Check
   if (.not. associated(CS)) then
@@ -479,6 +488,10 @@ subroutine MOM_wave_interface_init(time, G, GV, US, param_file, CS, diag, restar
   if (CS%StokesMixing) then
     allocate(CS%KvS(G%isd:G%Ied,G%jsd:G%jed,GV%ke), source=0.0)
   endif
+  if (CS%WaveMethod == SURFBANDS) then
+    allocate(CS%CMN_FAC_x(G%isdB:G%IedB,G%jsd:G%jed,G%ke,CS%NumBands), source=0.0)
+    allocate(CS%CMN_FAC_y(G%isd:G%Ied,G%jsdB:G%jedB,G%ke,CS%NumBands), source=0.0)
+  endif
 
   id_b = diag_axis_init('b', CS%WaveNum_Cen, "nondim", 'N', &
        'Central wavenumber bands for surface Stokes drift partitions')
@@ -496,10 +509,24 @@ subroutine MOM_wave_interface_init(time, G, GV, US, param_file, CS, diag, restar
        CS%diag%axesCvL,Time,'3d Stokes drift (y)', 'm s-1', conversion=US%L_T_to_m_s)
   CS%id_3dstokes_x = register_diag_field('ocean_model','3d_stokes_x', &
        CS%diag%axesCuL,Time,'3d Stokes drift (x)', 'm s-1', conversion=US%L_T_to_m_s)
-  CS%id_pstokes_y = register_diag_field('ocean_model','pstokes_y', &
-       axes_Cvk,Time,'Surface Stokes drift partitions (y)', 'm s-1', conversion=US%L_T_to_m_s)
-  CS%id_pstokes_x = register_diag_field('ocean_model','pstokes_x', &
-       axes_Cvk,Time,'Surface Stokes drift partitions (x)', 'm s-1', conversion=US%L_T_to_m_s)
+  if (CS%WaveMethod == SURFBANDS) then
+    allocate(CS%id_pstokes_y(CS%NumBands), source=-1)
+    allocate(CS%id_pstokes_x(CS%NumBands), source=-1)
+    allocate(CS%id_pstokes_y_fac(CS%NumBands), source=-1)
+    allocate(CS%id_pstokes_x_fac(CS%NumBands), source=-1)
+    do b=1,CS%NumBands
+      CS%id_pstokes_y(b) = register_diag_field('ocean_model','pstokes_y_'//itoa(b), &
+           CS%diag%axesCv1,Time,'Surface Stokes drift partition (y) for waveband '//itoa(b), 'm s-1', conversion=US%L_T_to_m_s)
+      CS%id_pstokes_x(b) = register_diag_field('ocean_model','pstokes_x_'//itoa(b), &
+           CS%diag%axesCu1,Time,'Surface Stokes drift partitions (x) for waveband '//itoa(b), 'm s-1', conversion=US%L_T_to_m_s)
+      CS%id_pstokes_y_fac(b)= register_diag_field('ocean_model','pstokes_y_fac_'//itoa(b), &
+           CS%diag%axesCvL,Time,'Depth-dependent decay factor for meridional Surface Stokes drift - partition '//itoa(b), 'm s-1', &
+           conversion=US%L_T_to_m_s)
+      CS%id_pstokes_x_fac(b)= register_diag_field('ocean_model','pstokes_x_fac_'//itoa(b), &
+           CS%diag%axesCuL,Time,'Depth-dependent decay factor for zonal Surface Stokes drift - partition '//itoa(b), 'm s-1', &
+           conversion=US%L_T_to_m_s)
+    enddo
+  endif
   if (CS%Stokes_DDT) then
     CS%id_ddt_3dstokes_y = register_diag_field('ocean_model','dvdt_Stokes', &
          CS%diag%axesCvL,Time,'d/dt Stokes drift (meridional)','m s-2')
@@ -638,7 +665,6 @@ subroutine Update_Stokes_Drift(G, GV, US, CS, h, ustar, dt, dynamics_step)
   real    :: level_thick ! The thickness of each layer [Z ~> m]
   real    :: min_level_thick_avg ! A minimum layer thickness for inclusion in the average [Z ~> m]
   real    :: DecayScale ! A vertical decay scale in the test profile [Z ~> m]
-  real    :: CMN_FAC  ! A nondimensional factor [nondim]
   real    :: WN       ! Model wavenumber [Z-1 ~> m-1]
   real    :: UStokes  ! A Stokes drift velocity [L T-1 ~> m s-1]
   real    :: PI       ! 3.1415926535...
@@ -696,6 +722,8 @@ subroutine Update_Stokes_Drift(G, GV, US, CS, h, ustar, dt, dynamics_step)
     CS%Us_y(:,:,:) = 0.0
     CS%Us0_x(:,:) = 0.0
     CS%Us0_y(:,:) = 0.0
+    CS%CMN_FAC_x(:,:,:,:) = 0.0
+    CS%CMN_FAC_y(:,:,:,:) = 0.0
     ! Computing X direction Stokes drift
     do jj = G%jsc,G%jec
       do II = G%iscB,G%iecB
@@ -717,33 +745,33 @@ subroutine Update_Stokes_Drift(G, GV, US, CS, h, ustar, dt, dynamics_step)
             do b = 1,CS%NumBands
               if (CS%PartitionMode==0) then
                 ! In wavenumber we are averaging over level
-                CMN_FAC = (exp(Top*2.*CS%WaveNum_Cen(b))-exp(Bottom*2.*CS%WaveNum_Cen(b)))&
+                CS%CMN_FAC_x(II,jj,kk,b) = (exp(Top*2.*CS%WaveNum_Cen(b))-exp(Bottom*2.*CS%WaveNum_Cen(b)))&
                           / ((Top-Bottom)*(2.*CS%WaveNum_Cen(b)))
                 !### For accuracy and numerical stability rewrite this as:
                 ! CMN_FAC = exp(2.*CS%WaveNum_Cen(b)*Top) * one_minus_exp_x(2.*CS%WaveNum_Cen(b)*level_thick)
               elseif (CS%PartitionMode==1) then
                 if (CS%StkLevelMode==0) then
                   ! Take the value at the midpoint
-                  CMN_FAC = exp(MidPoint * 2. * CS%Freq_Cen(b)**2 / CS%g_Earth)
+                  CS%CMN_FAC_x(II,jj,kk,b) = exp(MidPoint * 2. * CS%Freq_Cen(b)**2 / CS%g_Earth)
                 elseif (CS%StkLevelMode==1) then
                   ! Use a numerical integration and then divide by layer thickness
                   WN = CS%Freq_Cen(b)**2 / CS%g_Earth !bgr bug-fix missing g
-                  CMN_FAC = (exp(2.*WN*Top)-exp(2.*WN*Bottom)) / (2.*WN*(Top-Bottom))
+                  CS%CMN_FAC_x(II,jj,kk,b) = (exp(2.*WN*Top)-exp(2.*WN*Bottom)) / (2.*WN*(Top-Bottom))
                   !### For accuracy and numerical stability rewrite this as:
                   ! CMN_FAC = exp(2.*WN*Top) * one_minus_exp_x(2.*WN*level_thick)
                 endif
               endif
-              CS%US_x(II,jj,kk) = CS%US_x(II,jj,kk) + CS%STKx0(II,jj,b)*CMN_FAC
+              CS%US_x(II,jj,kk) = CS%US_x(II,jj,kk) + CS%STKx0(II,jj,b)*CS%CMN_FAC_x(II,jj,kk,b)
             enddo
           else
             ! Take the value at the midpoint
             do b = 1,CS%NumBands
               if (CS%PartitionMode==0) then
-                CMN_FAC = exp(MidPoint * 2. * CS%WaveNum_Cen(b))
+                CS%CMN_FAC_x(II,jj,kk,b) = exp(MidPoint * 2. * CS%WaveNum_Cen(b))
               elseif (CS%PartitionMode==1) then
-                CMN_FAC = exp(MidPoint * 2. * CS%Freq_Cen(b)**2 / CS%g_Earth)
+                CS%CMN_FAC_x(II,jj,kk,b) = exp(MidPoint * 2. * CS%Freq_Cen(b)**2 / CS%g_Earth)
               endif
-              CS%US_x(II,jj,kk) = CS%US_x(II,jj,kk) + CS%STKx0(II,jj,b)*CMN_FAC
+              CS%US_x(II,jj,kk) = CS%US_x(II,jj,kk) + CS%STKx0(II,jj,b)*CS%CMN_FAC_x(II,jj,kk,b)
             enddo
           endif
         enddo
@@ -769,33 +797,33 @@ subroutine Update_Stokes_Drift(G, GV, US, CS, h, ustar, dt, dynamics_step)
             do b = 1,CS%NumBands
               if (CS%PartitionMode==0) then
               ! In wavenumber we are averaging over level
-                CMN_FAC = (exp(Top*2.*CS%WaveNum_Cen(b))-exp(Bottom*2.*CS%WaveNum_Cen(b)))&
+                CS%CMN_FAC_y(ii,JJ,kk,b) = (exp(Top*2.*CS%WaveNum_Cen(b))-exp(Bottom*2.*CS%WaveNum_Cen(b)))&
                           / ((Top-Bottom)*(2.*CS%WaveNum_Cen(b)))
                 !### For accuracy and numerical stability rewrite this as:
                 ! CMN_FAC = exp(2.*CS%WaveNum_Cen(b)*Top) * one_minus_exp_x(2.*CS%WaveNum_Cen(b)*level_thick)
               elseif (CS%PartitionMode==1) then
                 if (CS%StkLevelMode==0) then
                   ! Take the value at the midpoint
-                  CMN_FAC = exp(MidPoint * 2. * CS%Freq_Cen(b)**2 / CS%g_Earth)
+                  CS%CMN_FAC_y(ii,JJ,kk,b) = exp(MidPoint * 2. * CS%Freq_Cen(b)**2 / CS%g_Earth)
                 elseif (CS%StkLevelMode==1) then
                   ! Use a numerical integration and then divide by layer thickness
                   WN = CS%Freq_Cen(b)**2 / CS%g_Earth !bgr bug-fix missing g
-                  CMN_FAC = (exp(2.*WN*Top)-exp(2.*WN*Bottom)) / (2.*WN*(Top-Bottom))
+                  CS%CMN_FAC_y(ii,JJ,kk,b) = (exp(2.*WN*Top)-exp(2.*WN*Bottom)) / (2.*WN*(Top-Bottom))
                   !### For accuracy and numerical stability rewrite this as:
                   ! CMN_FAC = exp(2.*WN*Top) * one_minus_exp_x(2.*WN*level_thick)
                 endif
               endif
-              CS%US_y(ii,JJ,kk) = CS%US_y(ii,JJ,kk) + CS%STKy0(ii,JJ,b)*CMN_FAC
+              CS%US_y(ii,JJ,kk) = CS%US_y(ii,JJ,kk) + CS%STKy0(ii,JJ,b)*CS%CMN_FAC_y(ii,JJ,kk,b)
             enddo
           else
             ! Take the value at the midpoint
             do b = 1,CS%NumBands
               if (CS%PartitionMode==0) then
-                CMN_FAC = exp(MidPoint*2.*CS%WaveNum_Cen(b))
+                CS%CMN_FAC_y(ii,JJ,kk,b) = exp(MidPoint*2.*CS%WaveNum_Cen(b))
               elseif (CS%PartitionMode==1) then
-                CMN_FAC = exp(MidPoint * 2. * CS%Freq_Cen(b)**2 / CS%g_Earth)
+                CS%CMN_FAC_y(ii,JJ,kk,b) = exp(MidPoint * 2. * CS%Freq_Cen(b)**2 / CS%g_Earth)
               endif
-              CS%US_y(ii,JJ,kk) = CS%US_y(ii,JJ,kk) + CS%STKy0(ii,JJ,b)*CMN_FAC
+              CS%US_y(ii,JJ,kk) = CS%US_y(ii,JJ,kk) + CS%STKy0(ii,JJ,b)*CS%CMN_FAC_y(ii,JJ,kk,b)
             enddo
           endif
         enddo
@@ -893,10 +921,6 @@ subroutine Update_Stokes_Drift(G, GV, US, CS, h, ustar, dt, dynamics_step)
     call post_data(CS%id_3dstokes_y, CS%us_y, CS%diag)
   if (CS%id_3dstokes_x>0) &
     call post_data(CS%id_3dstokes_x, CS%us_x, CS%diag)
-  if (CS%id_pstokes_y>0) &
-    call post_data(CS%id_pstokes_y, CS%stky0, CS%diag)
-  if (CS%id_pstokes_x>0) &
-    call post_data(CS%id_pstokes_x, CS%stkx0, CS%diag)
   if (CS%Stokes_DDT) then
     if (CS%id_ddt_3dstokes_x>0) &
       call post_data(CS%id_ddt_3dstokes_x, CS%ddt_us_x, CS%diag)
@@ -909,6 +933,18 @@ subroutine Update_Stokes_Drift(G, GV, US, CS, h, ustar, dt, dynamics_step)
   endif
   if (CS%id_La_turb>0) &
     call post_data(CS%id_La_turb, CS%La_turb, CS%diag)
+  if (CS%WaveMethod == SURFBANDS) then
+    do b=1,CS%NumBands
+      if (CS%id_pstokes_y_fac(b)>0) &
+        call post_data(CS%id_pstokes_y_fac(b), CS%CMN_FAC_y(:,:,:,b), CS%diag)
+      if (CS%id_pstokes_x_fac(b)>0) &
+        call post_data(CS%id_pstokes_x_fac(b), CS%CMN_FAC_x(:,:,:,b), CS%diag)
+      if (CS%id_pstokes_y(b)>0) &
+        call post_data(CS%id_pstokes_y(b), CS%stky0(:,:,b), CS%diag)
+      if (CS%id_pstokes_x(b)>0) &
+        call post_data(CS%id_pstokes_x(b), CS%stkx0(:,:,b), CS%diag)
+    enddo
+  endif
 
 end subroutine Update_Stokes_Drift
 
@@ -1980,5 +2016,13 @@ end subroutine waves_register_restarts
 !! also computes full 3d Stokes drift profiles, which will be useful
 !! if second-order type boundary layer parameterizations are
 !! implemented (perhaps via GOTM, work in progress).
+
+function itoa(i) result(res)
+  character(:),allocatable :: res
+  integer,intent(in) :: i
+  character(range(i)+2) :: tmp
+  write(tmp,'(i0)') i
+  res = trim(tmp)
+end function
 
 end module MOM_wave_interface
