@@ -16,6 +16,9 @@ use MOM_open_boundary, only : ocean_OBC_type
 use MOM_unit_scaling, only : unit_scale_type
 use MOM_variables, only : BT_cont_type
 use MOM_verticalGrid, only : verticalGrid_type
+#ifdef ROSE_COMP
+use time_manager_mod, only: time_type
+#endif
 
 implicit none ; private
 

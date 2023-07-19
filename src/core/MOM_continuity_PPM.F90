@@ -14,7 +14,7 @@ use MOM_unit_scaling, only : unit_scale_type
 use MOM_variables, only : BT_cont_type
 use MOM_verticalGrid, only : verticalGrid_type
 
-#ifdef ROSEPREP
+#ifdef ROSE_COMP
 use time_manager_mod, only: time_type
 #endif
 
