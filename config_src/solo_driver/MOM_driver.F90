@@ -215,6 +215,16 @@ program MOM_main
 
   !=====================================================================
 
+#ifdef GPTL
+  include 'gptl.inc'
+  integer :: gptl_ret, gptl_i
+  gptl_ret = gptlsetoption(gptlabort_on_error, 1)                  ! Abort on GPTL error
+  gptl_ret = gptlsetoption(gptloverhead, 0)                        ! Turn off overhead estimate
+  gptl_ret = gptlsetutr(gptlnanotime)                              ! Set underlying timer
+  gptl_ret = gptlsetoption(gptlprint_method, gptlfull_tree)        ! Print full tree
+  gptl_ret = gptlinitialize()                                      ! Initialize GPTL
+#endif
+
   call write_cputime_start_clock(write_CPU_CSp)
 
   call MOM_infra_init() ; call io_infra_init()
@@ -667,5 +677,12 @@ program MOM_main
 
   call MOM_end(MOM_CSp)
   if (use_ice_shelf) call ice_shelf_end(ice_shelf_CSp)
+
+#ifdef GPTL
+  do gptl_i=0,127
+        gptl_ret = gptlpr(gptl_i)
+  end do
+  gptl_ret = gptlfinalize()
+#endif
 
 end program MOM_main
