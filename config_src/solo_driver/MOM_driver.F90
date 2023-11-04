@@ -222,6 +222,7 @@ program MOM_main
   gptl_ret = gptlsetoption(gptloverhead, 0)                        ! Turn off overhead estimate
   gptl_ret = gptlsetutr(gptlnanotime)                              ! Set underlying timer
   gptl_ret = gptlsetoption(gptlprint_method, gptlfull_tree)        ! Print full tree
+  gptl_ret = gptlsetoption (gptlsync_mpi, 1)                       ! separates true MPI time from time spent waiting
   gptl_ret = gptlinitialize()                                      ! Initialize GPTL
 #endif
 
