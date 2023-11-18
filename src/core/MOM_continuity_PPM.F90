@@ -14,6 +14,10 @@ use MOM_unit_scaling, only : unit_scale_type
 use MOM_variables, only : BT_cont_type
 use MOM_verticalGrid, only : verticalGrid_type
 
+#ifdef GPTL
+use gptl
+#endif
+
 #ifdef ROSE_COMP
 use time_manager_mod, only: time_type
 #endif
@@ -135,6 +139,12 @@ subroutine continuity_PPM(u, v, hin, h, uh, vh, dt, G, GV, US, CS, uhbt, vhbt, O
   integer :: i, j, k
 
   logical :: x_first
+#ifdef GPTL
+  integer :: gptl_ret, gptl_handle = 0
+#endif
+#ifdef GPTL
+    gptl_ret = gptlstart_handle("::MOM_continuity_PPM::continuity_PPM", gptl_handle)
+#endif
   is = G%isc ; ie = G%iec ; js = G%jsc ; je = G%jec ; nz = G%ke
 
   h_min = GV%Angstrom_H
@@ -153,7 +163,14 @@ subroutine continuity_PPM(u, v, hin, h, uh, vh, dt, G, GV, US, CS, uhbt, vhbt, O
   !    First, advect zonally.
     LB%ish = G%isc ; LB%ieh = G%iec
     LB%jsh = G%jsc-stencil ; LB%jeh = G%jec+stencil
+
+#ifdef GPTL
+    gptl_ret = gptlstop_handle("::MOM_continuity_PPM::continuity_PPM", gptl_handle)
+#endif
     call zonal_mass_flux(u, hin, uh, dt, G, GV, US, CS, LB, uhbt, OBC, visc_rem_u, u_cor, BT_cont)
+#ifdef GPTL
+    gptl_ret = gptlstart_handle("::MOM_continuity_PPM::continuity_PPM", gptl_handle)
+#endif
 
     call mpp_clock_begin(id_clock_update)
     !$OMP parallel do default(shared)
@@ -168,7 +185,14 @@ subroutine continuity_PPM(u, v, hin, h, uh, vh, dt, G, GV, US, CS, uhbt, vhbt, O
 
     !    Now advect meridionally, using the updated thicknesses to determine
     !  the fluxes.
+
+#ifdef GPTL
+    gptl_ret = gptlstop_handle("::MOM_continuity_PPM::continuity_PPM", gptl_handle)
+#endif
     call meridional_mass_flux(v, h, vh, dt, G, GV, US, CS, LB, vhbt, OBC, visc_rem_v, v_cor, BT_cont)
+#ifdef GPTL
+    gptl_ret = gptlstart_handle("::MOM_continuity_PPM::continuity_PPM", gptl_handle)
+#endif
 
     call mpp_clock_begin(id_clock_update)
     !$OMP parallel do default(shared)
@@ -184,7 +208,13 @@ subroutine continuity_PPM(u, v, hin, h, uh, vh, dt, G, GV, US, CS, uhbt, vhbt, O
     LB%ish = G%isc-stencil ; LB%ieh = G%iec+stencil
     LB%jsh = G%jsc ; LB%jeh = G%jec
 
+#ifdef GPTL
+    gptl_ret = gptlstop_handle("::MOM_continuity_PPM::continuity_PPM", gptl_handle)
+#endif
     call meridional_mass_flux(v, hin, vh, dt, G, GV, US, CS, LB, vhbt, OBC, visc_rem_v, v_cor, BT_cont)
+#ifdef GPTL
+    gptl_ret = gptlstart_handle("::MOM_continuity_PPM::continuity_PPM", gptl_handle)
+#endif
 
     call mpp_clock_begin(id_clock_update)
     !$OMP parallel do default(shared)
@@ -196,7 +226,14 @@ subroutine continuity_PPM(u, v, hin, h, uh, vh, dt, G, GV, US, CS, uhbt, vhbt, O
   !    Now advect zonally, using the updated thicknesses to determine
   !  the fluxes.
     LB%ish = G%isc ; LB%ieh = G%iec ; LB%jsh = G%jsc ; LB%jeh = G%jec
+
+#ifdef GPTL
+    gptl_ret = gptlstop_handle("::MOM_continuity_PPM::continuity_PPM", gptl_handle)
+#endif
     call zonal_mass_flux(u, h, uh, dt, G, GV, US, CS, LB, uhbt, OBC, visc_rem_u, u_cor, BT_cont)
+#ifdef GPTL
+    gptl_ret = gptlstart_handle("::MOM_continuity_PPM::continuity_PPM", gptl_handle)
+#endif
 
     call mpp_clock_begin(id_clock_update)
     !$OMP parallel do default(shared)
@@ -208,7 +245,9 @@ subroutine continuity_PPM(u, v, hin, h, uh, vh, dt, G, GV, US, CS, uhbt, vhbt, O
     call mpp_clock_end(id_clock_update)
 
   endif
-
+#ifdef GPTL
+    gptl_ret = gptlstop_handle("::MOM_continuity_PPM::continuity_PPM", gptl_handle)
+#endif
 end subroutine continuity_PPM
 
 !> Calculates the mass or volume fluxes through the zonal faces, and other related quantities.
@@ -270,6 +309,12 @@ subroutine zonal_mass_flux(u, h_in, uh, dt, G, GV, US, CS, LB, uhbt, OBC, &
   logical :: local_specified_BC, use_visc_rem, set_BT_cont, any_simple_OBC
   logical :: local_Flather_OBC, local_open_BC, is_simple
   type(OBC_segment_type), pointer :: segment => NULL()
+#ifdef GPTL
+  integer :: gptl_ret, gptl_handle = 0
+#endif
+#ifdef GPTL
+    gptl_ret = gptlstart_handle("::MOM_continuity_PPM::zonal_mass_flux", gptl_handle)
+#endif
 
   use_visc_rem = present(visc_rem_u)
   local_specified_BC = .false. ; set_BT_cont = .false. ; local_Flather_OBC = .false.
@@ -295,8 +340,16 @@ subroutine zonal_mass_flux(u, h_in, uh, dt, G, GV, US, CS, LB, uhbt, OBC, &
         h_L(i,j,k) = h_in(i,j,k) ; h_R(i,j,k) = h_in(i,j,k)
       enddo ; enddo
     else
+
+#ifdef GPTL
+    gptl_ret = gptlstop_handle("::MOM_continuity_PPM::zonal_mass_flux", gptl_handle)
+#endif
       call PPM_reconstruction_x(h_in(:,:,k), h_L(:,:,k), h_R(:,:,k), G, LB, &
-                                2.0*GV%Angstrom_H, CS%monotonic, simple_2nd=CS%simple_2nd, OBC=OBC)
+                          2.0*GV%Angstrom_H, CS%monotonic, simple_2nd=CS%simple_2nd, OBC=OBC)
+#ifdef GPTL
+    gptl_ret = gptlstart_handle("::MOM_continuity_PPM::zonal_mass_flux", gptl_handle)
+#endif
+
     endif
     do I=ish-1,ieh ; visc_rem(I,k) = 1.0 ; enddo
   enddo
@@ -317,9 +370,16 @@ subroutine zonal_mass_flux(u, h_in, uh, dt, G, GV, US, CS, LB, uhbt, OBC, &
         visc_rem(I,k) = visc_rem_u(I,j,k)
         visc_rem_max(I) = max(visc_rem_max(I), visc_rem(I,k))
       enddo ; endif
+#ifdef GPTL
+    gptl_ret = gptlstop_handle("::MOM_continuity_PPM::zonal_mass_flux", gptl_handle)
+#endif
       call zonal_flux_layer(u(:,j,k), h_in(:,j,k), h_L(:,j,k), h_R(:,j,k), &
                             uh(:,j,k), duhdu(:,k), visc_rem(:,k), &
                             dt, G, US, j, ish, ieh, do_I, CS%vol_CFL, OBC)
+#ifdef GPTL
+    gptl_ret = gptlstart_handle("::MOM_continuity_PPM::zonal_mass_flux", gptl_handle)
+#endif
+
       if (local_specified_BC) then
         do I=ish-1,ieh
           if (OBC%segment(OBC%segnum_u(I,j))%specified) &
@@ -422,9 +482,15 @@ subroutine zonal_mass_flux(u, h_in, uh, dt, G, GV, US, CS, LB, uhbt, OBC, &
       endif
 
       if (present(uhbt)) then
+#ifdef GPTL
+    gptl_ret = gptlstop_handle("::MOM_continuity_PPM::zonal_mass_flux", gptl_handle)
+#endif
         call zonal_flux_adjust(u, h_in, h_L, h_R, uhbt(:,j), uh_tot_0, duhdu_tot_0, du, &
                                du_max_CFL, du_min_CFL, dt, G, US, CS, visc_rem, &
                                j, ish, ieh, do_I, .true., uh, OBC=OBC)
+#ifdef GPTL
+    gptl_ret = gptlstart_handle("::MOM_continuity_PPM::zonal_mass_flux", gptl_handle)
+#endif
 
         if (present(u_cor)) then ; do k=1,nz
           do I=ish-1,ieh ; u_cor(I,j,k) = u(I,j,k) + du(I) * visc_rem(I,k) ; enddo
@@ -437,9 +503,15 @@ subroutine zonal_mass_flux(u, h_in, uh, dt, G, GV, US, CS, LB, uhbt, OBC, &
       endif
 
       if (set_BT_cont) then
+#ifdef GPTL
+    gptl_ret = gptlstop_handle("::MOM_continuity_PPM::zonal_mass_flux", gptl_handle)
+#endif
         call set_zonal_BT_cont(u, h_in, h_L, h_R, BT_cont, uh_tot_0, duhdu_tot_0,&
                                du_max_CFL, du_min_CFL, dt, G, US, CS, visc_rem, &
                                visc_rem_max, j, ish, ieh, do_I)
+#ifdef GPTL
+    gptl_ret = gptlstart_handle("::MOM_continuity_PPM::zonal_mass_flux", gptl_handle)
+#endif
         if (any_simple_OBC) then
           do I=ish-1,ieh
             do_I(I) = OBC%segment(OBC%segnum_u(I,j))%specified
@@ -491,14 +563,28 @@ subroutine zonal_mass_flux(u, h_in, uh, dt, G, GV, US, CS, LB, uhbt, OBC, &
 
   if  (set_BT_cont) then ; if (allocated(BT_cont%h_u)) then
     if (present(u_cor)) then
+#ifdef GPTL
+    gptl_ret = gptlstop_handle("::MOM_continuity_PPM::zonal_mass_flux", gptl_handle)
+#endif
       call zonal_face_thickness(u_cor, h_in, h_L, h_R, BT_cont%h_u, dt, G, US, LB, &
                                 CS%vol_CFL, CS%marginal_faces, visc_rem_u, OBC)
+#ifdef GPTL
+    gptl_ret = gptlstart_handle("::MOM_continuity_PPM::zonal_mass_flux", gptl_handle)
+#endif
     else
+#ifdef GPTL
+    gptl_ret = gptlstop_handle("::MOM_continuity_PPM::zonal_mass_flux", gptl_handle)
+#endif
       call zonal_face_thickness(u, h_in, h_L, h_R, BT_cont%h_u, dt, G, US, LB, &
                                 CS%vol_CFL, CS%marginal_faces, visc_rem_u, OBC)
+#ifdef GPTL
+    gptl_ret = gptlstart_handle("::MOM_continuity_PPM::zonal_mass_flux", gptl_handle)
+#endif
     endif
   endif ; endif
-
+#ifdef GPTL
+    gptl_ret = gptlstop_handle("::MOM_continuity_PPM::zonal_mass_flux", gptl_handle)
+#endif
 end subroutine zonal_mass_flux
 
 !> Evaluates the zonal mass or volume fluxes in a layer.
@@ -534,7 +620,12 @@ subroutine zonal_flux_layer(u, h, h_L, h_R, uh, duhdu, visc_rem, dt, G, US, j, &
   real :: h_marg ! The marginal thickness of a flux [H ~> m or kg m-2].
   integer :: i
   logical :: local_open_BC
-
+#ifdef GPTL
+  integer :: gptl_ret, gptl_handle = 0
+#endif
+#ifdef GPTL
+    gptl_ret = gptlstart_handle("::MOM_continuity_PPM::zonal_flux_layer", gptl_handle)
+#endif
   local_open_BC = .false.
   if (present(OBC)) then ; if (associated(OBC)) then
     local_open_BC = OBC%open_u_BCs_exist_globally
@@ -576,6 +667,9 @@ subroutine zonal_flux_layer(u, h, h_L, h_R, uh, duhdu, visc_rem, dt, G, US, j, &
       endif
     endif ; enddo
   endif
+#ifdef GPTL
+    gptl_ret = gptlstop_handle("::MOM_continuity_PPM::zonal_flux_layer", gptl_handle)
+#endif
 end subroutine zonal_flux_layer
 
 !> Sets the effective interface thickness at each zonal velocity point.
@@ -613,6 +707,12 @@ subroutine zonal_face_thickness(u, h, h_L, h_R, h_u, dt, G, US, LB, vol_CFL, &
   real :: h_marg ! The marginal thickness of a flux [H ~> m or kg m-2].
   logical :: local_open_BC
   integer :: i, j, k, ish, ieh, jsh, jeh, nz, n
+#ifdef GPTL
+  integer :: gptl_ret, gptl_handle = 0
+#endif
+#ifdef GPTL
+    gptl_ret = gptlstart_handle("::MOM_continuity_PPM::zonal_face_thickness", gptl_handle)
+#endif
   ish = LB%ish ; ieh = LB%ieh ; jsh = LB%jsh ; jeh = LB%jeh ; nz = G%ke
 
   !$OMP parallel do default(shared) private(CFL,curv_3,h_marg,h_avg)
@@ -700,7 +800,9 @@ subroutine zonal_face_thickness(u, h, h_L, h_R, h_u, dt, G, US, LB, vol_CFL, &
       endif
     enddo
   endif
-
+#ifdef GPTL
+    gptl_ret = gptlstop_handle("::MOM_continuity_PPM::zonal_face_thickness", gptl_handle)
+#endif
 end subroutine zonal_face_thickness
 
 !> Returns the barotropic velocity adjustment that gives the
@@ -765,7 +867,12 @@ subroutine zonal_flux_adjust(u, h_in, h_L, h_R, uhbt, uh_tot_0, duhdu_tot_0, &
   real :: tol_vel ! The tolerance for velocity in the current iteration [L T-1 ~> m s-1].
   integer :: i, k, nz, itt, max_itts = 20
   logical :: full_prec, domore, do_I(SZIB_(G))
-
+#ifdef GPTL
+  integer :: gptl_ret, gptl_handle = 0
+#endif
+#ifdef GPTL
+    gptl_ret = gptlstart_handle("::MOM_continuity_PPM::zonal_flux_adjust", gptl_handle)
+#endif
   nz = G%ke
   full_prec = .true. ; if (present(full_precision)) full_prec = full_precision
 
@@ -847,9 +954,15 @@ subroutine zonal_flux_adjust(u, h_in, h_L, h_R, uhbt, uh_tot_0, duhdu_tot_0, &
       do k=1,nz
         do I=ish-1,ieh ; u_new(I) = u(I,j,k) + du(I) * visc_rem(I,k)
       enddo
+#ifdef GPTL
+    gptl_ret = gptlstop_handle("::MOM_continuity_PPM::zonal_flux_adjust", gptl_handle)
+#endif
       call zonal_flux_layer(u_new, h_in(:,j,k), h_L(:,j,k), h_R(:,j,k), &
                             uh_aux(:,k), duhdu(:,k), visc_rem(:,k), &
                             dt, G, US, j, ish, ieh, do_I, CS%vol_CFL, OBC)
+#ifdef GPTL
+    gptl_ret = gptlstart_handle("::MOM_continuity_PPM::zonal_flux_adjust", gptl_handle)
+#endif
       enddo
     endif
 
@@ -875,7 +988,9 @@ subroutine zonal_flux_adjust(u, h_in, h_L, h_R, uhbt, uh_tot_0, duhdu_tot_0, &
       uh_3d(I,j,k) = uh_aux(I,k)
     enddo ; enddo
   endif
-
+#ifdef GPTL
+    gptl_ret = gptlstop_handle("::MOM_continuity_PPM::zonal_flux_adjust", gptl_handle)
+#endif
 end subroutine zonal_flux_adjust
 
 !> Sets a structure that describes the zonal barotropic volume or mass fluxes as a
@@ -948,15 +1063,26 @@ subroutine set_zonal_BT_cont(u, h_in, h_L, h_R, BT_cont, uh_tot_0, duhdu_tot_0, 
   real :: Idt     ! The inverse of the time step [T-1 ~> s-1].
   logical :: domore
   integer :: i, k, nz
-
+#ifdef GPTL
+  integer :: gptl_ret, gptl_handle = 0
+#endif
+#ifdef GPTL
+    gptl_ret = gptlstart_handle("::MOM_continuity_PPM::set_zonal_BT_cont", gptl_handle)
+#endif
   nz = G%ke ; Idt = 1.0 / dt
   min_visc_rem = 0.1 ; CFL_min = 1e-6
 
  ! Diagnose the zero-transport correction, du0.
   do I=ish-1,ieh ; zeros(I) = 0.0 ; enddo
+#ifdef GPTL
+    gptl_ret = gptlstop_handle("::MOM_continuity_PPM::set_zonal_BT_cont", gptl_handle)
+#endif
   call zonal_flux_adjust(u, h_in, h_L, h_R, zeros, uh_tot_0, duhdu_tot_0, du0, &
                          du_max_CFL, du_min_CFL, dt, G, US, CS, visc_rem, &
                          j, ish, ieh, do_I, .true.)
+#ifdef GPTL
+    gptl_ret = gptlstart_handle("::MOM_continuity_PPM::set_zonal_BT_cont", gptl_handle)
+#endif
 
   ! Determine the westerly- and easterly- fluxes.  Choose a sufficiently
   ! negative velocity correction for the easterly-flux, and a sufficiently
@@ -977,6 +1103,9 @@ subroutine set_zonal_BT_cont(u, h_in, h_L, h_R, BT_cont, uh_tot_0, duhdu_tot_0, 
       BT_cont%FA_u_E0(I,j) = 0.0 ; BT_cont%FA_u_EE(I,j) = 0.0
       BT_cont%uBT_WW(I,j) = 0.0 ; BT_cont%uBT_EE(I,j) = 0.0
     enddo ; enddo
+#ifdef GPTL
+    gptl_ret = gptlstop_handle("::MOM_continuity_PPM::set_zonal_BT_cont", gptl_handle)
+#endif
     return
   endif
 
@@ -996,12 +1125,18 @@ subroutine set_zonal_BT_cont(u, h_in, h_L, h_R, BT_cont, uh_tot_0, duhdu_tot_0, 
       u_R(I) = u(I,j,k) + duR(I) * visc_rem(I,k)
       u_0(I) = u(I,j,k) + du0(I) * visc_rem(I,k)
     endif ; enddo
+#ifdef GPTL
+    gptl_ret = gptlstop_handle("::MOM_continuity_PPM::set_zonal_BT_cont", gptl_handle)
+#endif
     call zonal_flux_layer(u_0, h_in(:,j,k), h_L(:,j,k), h_R(:,j,k), uh_0, duhdu_0, &
                           visc_rem(:,k), dt, G, US, j, ish, ieh, do_I, CS%vol_CFL)
     call zonal_flux_layer(u_L, h_in(:,j,k), h_L(:,j,k), h_R(:,j,k), uh_L, duhdu_L, &
                           visc_rem(:,k), dt, G, US, j, ish, ieh, do_I, CS%vol_CFL)
     call zonal_flux_layer(u_R, h_in(:,j,k), h_L(:,j,k), h_R(:,j,k), uh_R, duhdu_R, &
                           visc_rem(:,k), dt, G, US, j, ish, ieh, do_I, CS%vol_CFL)
+#ifdef GPTL
+    gptl_ret = gptlstart_handle("::MOM_continuity_PPM::set_zonal_BT_cont", gptl_handle)
+#endif
     do I=ish-1,ieh ; if (do_I(I)) then
       FAmt_0(I) = FAmt_0(I) + duhdu_0(I)
       FAmt_L(I) = FAmt_L(I) + duhdu_L(I)
@@ -1049,7 +1184,9 @@ subroutine set_zonal_BT_cont(u, h_in, h_L, h_R, BT_cont, uh_tot_0, duhdu_tot_0, 
     BT_cont%FA_u_E0(I,j) = 0.0 ; BT_cont%FA_u_EE(I,j) = 0.0
     BT_cont%uBT_WW(I,j) = 0.0 ; BT_cont%uBT_EE(I,j) = 0.0
   endif ; enddo
-
+#ifdef GPTL
+    gptl_ret = gptlstop_handle("::MOM_continuity_PPM::set_zonal_BT_cont", gptl_handle)
+#endif
 end subroutine set_zonal_BT_cont
 
 !> Calculates the mass or volume fluxes through the meridional faces, and other related quantities.
@@ -1109,7 +1246,12 @@ subroutine meridional_mass_flux(v, h_in, vh, dt, G, GV, US, CS, LB, vhbt, OBC, &
   logical :: local_specified_BC, use_visc_rem, set_BT_cont, any_simple_OBC
   logical :: local_Flather_OBC, is_simple, local_open_BC
   type(OBC_segment_type), pointer :: segment => NULL()
-
+#ifdef GPTL
+  integer :: gptl_ret, gptl_handle = 0
+#endif
+#ifdef GPTL
+    gptl_ret = gptlstart_handle("::MOM_continuity_PPM::meridional_mass_flux", gptl_handle)
+#endif
   use_visc_rem = present(visc_rem_v)
   local_specified_BC = .false. ; set_BT_cont = .false. ; local_Flather_OBC = .false.
   local_open_BC = .false.
@@ -1134,8 +1276,14 @@ subroutine meridional_mass_flux(v, h_in, vh, dt, G, GV, US, CS, LB, vhbt, OBC, &
         h_L(i,j,k) = h_in(i,j,k) ; h_R(i,j,k) = h_in(i,j,k)
       enddo ; enddo
     else
+#ifdef GPTL
+    gptl_ret = gptlstop_handle("::MOM_continuity_PPM::meridional_mass_flux", gptl_handle)
+#endif
       call PPM_reconstruction_y(h_in(:,:,k), h_L(:,:,k), h_R(:,:,k), G, LB, &
                                 2.0*GV%Angstrom_H, CS%monotonic, simple_2nd=CS%simple_2nd, OBC=OBC)
+#ifdef GPTL
+    gptl_ret = gptlstart_handle("::MOM_continuity_PPM::meridional_mass_flux", gptl_handle)
+#endif
     endif
     do i=ish,ieh ; visc_rem(i,k) = 1.0 ; enddo
   enddo
@@ -1157,9 +1305,15 @@ subroutine meridional_mass_flux(v, h_in, vh, dt, G, GV, US, CS, LB, vhbt, OBC, &
         visc_rem(i,k) = visc_rem_v(i,J,k)
         visc_rem_max(i) = max(visc_rem_max(i), visc_rem(i,k))
       enddo ; endif
+#ifdef GPTL
+    gptl_ret = gptlstop_handle("::MOM_continuity_PPM::meridional_mass_flux", gptl_handle)
+#endif
       call merid_flux_layer(v(:,J,k), h_in(:,:,k), h_L(:,:,k), h_R(:,:,k), &
                             vh(:,J,k), dvhdv(:,k), visc_rem(:,k), &
                             dt, G, US, J, ish, ieh, do_I, CS%vol_CFL, OBC)
+#ifdef GPTL
+    gptl_ret = gptlstart_handle("::MOM_continuity_PPM::meridional_mass_flux", gptl_handle)
+#endif
       if (local_specified_BC) then
         do i=ish,ieh
           if (OBC%segment(OBC%segnum_v(i,J))%specified) &
@@ -1258,9 +1412,15 @@ subroutine meridional_mass_flux(v, h_in, vh, dt, G, GV, US, CS, LB, vhbt, OBC, &
       endif
 
       if (present(vhbt)) then
+#ifdef GPTL
+    gptl_ret = gptlstop_handle("::MOM_continuity_PPM::meridional_mass_flux", gptl_handle)
+#endif
         call meridional_flux_adjust(v, h_in, h_L, h_R, vhbt(:,J), vh_tot_0, dvhdv_tot_0, dv, &
                                dv_max_CFL, dv_min_CFL, dt, G, US, CS, visc_rem, &
                                j, ish, ieh, do_I, .true., vh, OBC=OBC)
+#ifdef GPTL
+    gptl_ret = gptlstart_handle("::MOM_continuity_PPM::meridional_mass_flux", gptl_handle)
+#endif
 
         if (present(v_cor)) then ; do k=1,nz
           do i=ish,ieh ; v_cor(i,J,k) = v(i,J,k) + dv(i) * visc_rem(i,k) ; enddo
@@ -1272,9 +1432,15 @@ subroutine meridional_mass_flux(v, h_in, vh, dt, G, GV, US, CS, LB, vhbt, OBC, &
       endif
 
       if (set_BT_cont) then
+#ifdef GPTL
+    gptl_ret = gptlstop_handle("::MOM_continuity_PPM::meridional_mass_flux", gptl_handle)
+#endif
         call set_merid_BT_cont(v, h_in, h_L, h_R, BT_cont, vh_tot_0, dvhdv_tot_0,&
                                dv_max_CFL, dv_min_CFL, dt, G, US, CS, visc_rem, &
                                visc_rem_max, J, ish, ieh, do_I)
+#ifdef GPTL
+    gptl_ret = gptlstart_handle("::MOM_continuity_PPM::meridional_mass_flux", gptl_handle)
+#endif
         if (any_simple_OBC) then
           do i=ish,ieh
             do_I(i) = (OBC%segment(OBC%segnum_v(i,J))%specified)
@@ -1326,14 +1492,28 @@ subroutine meridional_mass_flux(v, h_in, vh, dt, G, GV, US, CS, LB, vhbt, OBC, &
 
   if (set_BT_cont) then ; if (allocated(BT_cont%h_v)) then
     if (present(v_cor)) then
+#ifdef GPTL
+    gptl_ret = gptlstop_handle("::MOM_continuity_PPM::meridional_mass_flux", gptl_handle)
+#endif
       call merid_face_thickness(v_cor, h_in, h_L, h_R, BT_cont%h_v, dt, G, US, LB, &
                                 CS%vol_CFL, CS%marginal_faces, visc_rem_v, OBC)
+#ifdef GPTL
+    gptl_ret = gptlstart_handle("::MOM_continuity_PPM::meridional_mass_flux", gptl_handle)
+#endif
     else
+#ifdef GPTL
+    gptl_ret = gptlstop_handle("::MOM_continuity_PPM::meridional_mass_flux", gptl_handle)
+#endif
       call merid_face_thickness(v, h_in, h_L, h_R, BT_cont%h_v, dt, G, US, LB, &
                                 CS%vol_CFL, CS%marginal_faces, visc_rem_v, OBC)
+#ifdef GPTL
+    gptl_ret = gptlstart_handle("::MOM_continuity_PPM::meridional_mass_flux", gptl_handle)
+#endif
     endif
   endif ; endif
-
+#ifdef GPTL
+    gptl_ret = gptlstop_handle("::MOM_continuity_PPM::meridional_mass_flux", gptl_handle)
+#endif
 end subroutine meridional_mass_flux
 
 !> Evaluates the meridional mass or volume fluxes in a layer.
@@ -1372,7 +1552,12 @@ subroutine merid_flux_layer(v, h, h_L, h_R, vh, dvhdv, visc_rem, dt, G, US, J, &
   real :: h_marg ! The marginal thickness of a flux [H ~> m or kg m-2].
   integer :: i
   logical :: local_open_BC
-
+#ifdef GPTL
+  integer :: gptl_ret, gptl_handle = 0
+#endif
+#ifdef GPTL
+    gptl_ret = gptlstart_handle("::MOM_continuity_PPM::merid_flux_layer", gptl_handle)
+#endif
   local_open_BC = .false.
   if (present(OBC)) then ; if (associated(OBC)) then
     local_open_BC = OBC%open_v_BCs_exist_globally
@@ -1415,6 +1600,9 @@ subroutine merid_flux_layer(v, h, h_L, h_R, vh, dvhdv, visc_rem, dt, G, US, J, &
       endif
     endif ; enddo
   endif
+#ifdef GPTL
+  gptl_ret = gptlstop_handle("::MOM_continuity_PPM::merid_flux_layer", gptl_handle)
+#endif
 end subroutine merid_flux_layer
 
 !> Sets the effective interface thickness at each meridional velocity point.
@@ -1452,6 +1640,12 @@ subroutine merid_face_thickness(v, h, h_L, h_R, h_v, dt, G, US, LB, vol_CFL, &
   real :: h_marg ! The marginal thickness of a flux [H ~> m or kg m-2].
   logical :: local_open_BC
   integer :: i, j, k, ish, ieh, jsh, jeh, n, nz
+#ifdef GPTL
+  integer :: gptl_ret, gptl_handle = 0
+#endif
+#ifdef GPTL
+    gptl_ret = gptlstart_handle("::MOM_continuity_PPM::merid_face_thickness", gptl_handle)
+#endif
   ish = LB%ish ; ieh = LB%ieh ; jsh = LB%jsh ; jeh = LB%jeh ; nz = G%ke
 
   !$OMP parallel do default(shared) private(CFL,curv_3,h_marg,h_avg)
@@ -1522,7 +1716,9 @@ subroutine merid_face_thickness(v, h, h_L, h_R, h_v, dt, G, US, LB, vol_CFL, &
       endif
     enddo
   endif
-
+#ifdef GPTL
+    gptl_ret = gptlstop_handle("::MOM_continuity_PPM::merid_face_thickness", gptl_handle)
+#endif
 end subroutine merid_face_thickness
 
 !> Returns the barotropic velocity adjustment that gives the desired barotropic (layer-summed) transport.
@@ -1585,7 +1781,12 @@ subroutine meridional_flux_adjust(v, h_in, h_L, h_R, vhbt, vh_tot_0, dvhdv_tot_0
   real :: tol_vel ! The tolerance for velocity in the current iteration [L T-1 ~> m s-1].
   integer :: i, k, nz, itt, max_itts = 20
   logical :: full_prec, domore, do_I(SZI_(G))
-
+#ifdef GPTL
+  integer :: gptl_ret, gptl_handle = 0
+#endif
+#ifdef GPTL
+    gptl_ret = gptlstart_handle("::MOM_continuity_PPM::meridional_flux_adjust", gptl_handle)
+#endif
   nz = G%ke
   full_prec = .true. ; if (present(full_precision)) full_prec = full_precision
 
@@ -1659,9 +1860,15 @@ subroutine meridional_flux_adjust(v, h_in, h_L, h_R, vhbt, vh_tot_0, dvhdv_tot_0
 
     if ((itt < max_itts) .or. present(vh_3d)) then ; do k=1,nz
       do i=ish,ieh ; v_new(i) = v(i,J,k) + dv(i) * visc_rem(i,k) ; enddo
+#ifdef GPTL
+    gptl_ret = gptlstop_handle("::MOM_continuity_PPM::meridional_flux_adjust", gptl_handle)
+#endif
       call merid_flux_layer(v_new, h_in(:,:,k), h_L(:,:,k), h_R(:,:,k), &
                             vh_aux(:,k), dvhdv(:,k), visc_rem(:,k), &
                             dt, G, US, J, ish, ieh, do_I, CS%vol_CFL, OBC)
+#ifdef GPTL
+    gptl_ret = gptlstart_handle("::MOM_continuity_PPM::meridional_flux_adjust", gptl_handle)
+#endif
     enddo ; endif
 
     if (itt < max_itts) then
@@ -1684,7 +1891,9 @@ subroutine meridional_flux_adjust(v, h_in, h_L, h_R, vhbt, vh_tot_0, dvhdv_tot_0
   if (present(vh_3d)) then ; do k=1,nz ; do i=ish,ieh
     vh_3d(i,J,k) = vh_aux(i,k)
   enddo ; enddo ; endif
-
+#ifdef GPTL
+    gptl_ret = gptlstop_handle("::MOM_continuity_PPM::meridional_flux_adjust", gptl_handle)
+#endif
 end subroutine meridional_flux_adjust
 
 !> Sets of a structure that describes the meridional barotropic volume or mass fluxes as a
@@ -1757,16 +1966,26 @@ subroutine set_merid_BT_cont(v, h_in, h_L, h_R, BT_cont, vh_tot_0, dvhdv_tot_0, 
   real :: Idt     ! The inverse of the time step [T-1 ~> s-1].
   logical :: domore
   integer :: i, k, nz
-
+#ifdef GPTL
+  integer :: gptl_ret, gptl_handle = 0
+#endif
+#ifdef GPTL
+    gptl_ret = gptlstart_handle("::MOM_continuity_PPM::set_merid_BT_cont", gptl_handle)
+#endif
   nz = G%ke ; Idt = 1.0 / dt
   min_visc_rem = 0.1 ; CFL_min = 1e-6
 
  ! Diagnose the zero-transport correction, dv0.
   do i=ish,ieh ; zeros(i) = 0.0 ; enddo
+#ifdef GPTL
+    gptl_ret = gptlstop_handle("::MOM_continuity_PPM::set_merid_BT_cont", gptl_handle)
+#endif
   call meridional_flux_adjust(v, h_in, h_L, h_R, zeros, vh_tot_0, dvhdv_tot_0, dv0, &
                          dv_max_CFL, dv_min_CFL, dt, G, US, CS, visc_rem, &
                          j, ish, ieh, do_I, .true.)
-
+#ifdef GPTL
+    gptl_ret = gptlstart_handle("::MOM_continuity_PPM::set_merid_BT_cont", gptl_handle)
+#endif
   !   Determine the southerly- and northerly- fluxes.  Choose a sufficiently
   ! negative velocity correction for the northerly-flux, and a sufficiently
   ! positive correction for the southerly-flux.
@@ -1787,6 +2006,9 @@ subroutine set_merid_BT_cont(v, h_in, h_L, h_R, BT_cont, vh_tot_0, dvhdv_tot_0, 
       BT_cont%FA_v_N0(i,J) = 0.0 ; BT_cont%FA_v_NN(i,J) = 0.0
       BT_cont%vBT_NN(i,J) = 0.0
     enddo ; enddo
+#ifdef GPTL
+    gptl_ret = gptlstop_handle("::MOM_continuity_PPM::set_merid_BT_cont", gptl_handle)
+#endif
     return
   endif
 
@@ -1805,12 +2027,18 @@ subroutine set_merid_BT_cont(v, h_in, h_L, h_R, BT_cont, vh_tot_0, dvhdv_tot_0, 
       v_R(i) = v(I,j,k) + dvR(i) * visc_rem(i,k)
       v_0(i) = v(I,j,k) + dv0(i) * visc_rem(i,k)
     endif ; enddo
+#ifdef GPTL
+    gptl_ret = gptlstop_handle("::MOM_continuity_PPM::set_merid_BT_cont", gptl_handle)
+#endif
     call merid_flux_layer(v_0, h_in(:,:,k), h_L(:,:,k), h_R(:,:,k), vh_0, dvhdv_0, &
                           visc_rem(:,k), dt, G, US, J, ish, ieh, do_I, CS%vol_CFL)
     call merid_flux_layer(v_L, h_in(:,:,k), h_L(:,:,k), h_R(:,:,k), vh_L, dvhdv_L, &
                           visc_rem(:,k), dt, G, US, J, ish, ieh, do_I, CS%vol_CFL)
     call merid_flux_layer(v_R, h_in(:,:,k), h_L(:,:,k), h_R(:,:,k), vh_R, dvhdv_R, &
                           visc_rem(:,k), dt, G, US, J, ish, ieh, do_I, CS%vol_CFL)
+#ifdef GPTL
+    gptl_ret = gptlstart_handle("::MOM_continuity_PPM::set_merid_BT_cont", gptl_handle)
+#endif
     do i=ish,ieh ; if (do_I(i)) then
       FAmt_0(i) = FAmt_0(i) + dvhdv_0(i)
       FAmt_L(i) = FAmt_L(i) + dvhdv_L(i)
@@ -1856,7 +2084,9 @@ subroutine set_merid_BT_cont(v, h_in, h_L, h_R, BT_cont, vh_tot_0, dvhdv_tot_0, 
     BT_cont%FA_v_N0(i,J) = 0.0 ; BT_cont%FA_v_NN(i,J) = 0.0
     BT_cont%vBT_SS(i,J) = 0.0 ; BT_cont%vBT_NN(i,J) = 0.0
   endif ; enddo
-
+#ifdef GPTL
+    gptl_ret = gptlstop_handle("::MOM_continuity_PPM::set_merid_BT_cont", gptl_handle)
+#endif
 end subroutine set_merid_BT_cont
 
 !> Calculates left/right edge values for PPM reconstruction.
@@ -1888,7 +2118,12 @@ subroutine PPM_reconstruction_x(h_in, h_L, h_R, G, LB, h_min, monotonic, simple_
   integer :: i, j, isl, iel, jsl, jel, n, stencil
   logical :: local_open_BC
   type(OBC_segment_type), pointer :: segment => NULL()
-
+#ifdef GPTL
+  integer :: gptl_ret, gptl_handle = 0
+#endif
+#ifdef GPTL
+    gptl_ret = gptlstart_handle("::MOM_continuity_PPM::PPM_reconstuction_x", gptl_handle)
+#endif
   use_CW84 = .false. ; if (present(monotonic)) use_CW84 = monotonic
   use_2nd = .false. ; if (present(simple_2nd)) use_2nd = simple_2nd
 
@@ -1989,6 +2224,9 @@ subroutine PPM_reconstruction_x(h_in, h_L, h_R, G, LB, h_min, monotonic, simple_
     enddo
   endif
 
+#ifdef GPTL
+    gptl_ret = gptlstop_handle("::MOM_continuity_PPM::PPM_reconstuction_x", gptl_handle)
+#endif
   if (use_CW84) then
     call PPM_limit_CW84(h_in, h_L, h_R, G, isl, iel, jsl, jel)
   else
@@ -2027,7 +2265,12 @@ subroutine PPM_reconstruction_y(h_in, h_L, h_R, G, LB, h_min, monotonic, simple_
   integer :: i, j, isl, iel, jsl, jel, n, stencil
   logical :: local_open_BC
   type(OBC_segment_type), pointer :: segment => NULL()
-
+#ifdef GPTL
+  integer :: gptl_ret, gptl_handle = 0
+#endif
+#ifdef GPTL
+    gptl_ret = gptlstart_handle("::MOM_continuity_PPM::PPM_reconstuction_y", gptl_handle)
+#endif
   use_CW84 = .false. ; if (present(monotonic)) use_CW84 = monotonic
   use_2nd = .false. ; if (present(simple_2nd)) use_2nd = simple_2nd
 
@@ -2126,6 +2369,9 @@ subroutine PPM_reconstruction_y(h_in, h_L, h_R, G, LB, h_min, monotonic, simple_
     enddo
   endif
 
+#ifdef GPTL
+    gptl_ret = gptlstop_handle("::MOM_continuity_PPM::PPM_reconstuction_y", gptl_handle)
+#endif
   if (use_CW84) then
     call PPM_limit_CW84(h_in, h_L, h_R, G, isl, iel, jsl, jel)
   else
@@ -2155,7 +2401,12 @@ subroutine PPM_limit_pos(h_in, h_L, h_R, h_min, G, iis, iie, jis, jie)
   real    :: curv, dh, scale
   character(len=256) :: mesg
   integer :: i,j
-
+#ifdef GPTL
+  integer :: gptl_ret, gptl_handle = 0
+#endif
+#ifdef GPTL
+    gptl_ret = gptlstart_handle("::MOM_continuity_PPM::PPM_limit_pos", gptl_handle)
+#endif
   do j=jis,jie ; do i=iis,iie
     ! This limiter prevents undershooting minima within the domain with
     ! values less than h_min.
@@ -2175,7 +2426,9 @@ subroutine PPM_limit_pos(h_in, h_L, h_R, h_min, G, iis, iie, jis, jie)
       endif
     endif
   enddo ; enddo
-
+#ifdef GPTL
+    gptl_ret = gptlstop_handle("::MOM_continuity_PPM::PPM_limit_pos", gptl_handle)
+#endif
 end subroutine PPM_limit_pos
 
 !> This subroutine limits the left/right edge values of the PPM reconstruction
@@ -2196,7 +2449,12 @@ subroutine PPM_limit_CW84(h_in, h_L, h_R, G, iis, iie, jis, jie)
   real    :: h_i, RLdiff, RLdiff2, RLmean, FunFac
   character(len=256) :: mesg
   integer :: i,j
-
+#ifdef GPTL
+  integer :: gptl_ret, gptl_handle = 0
+#endif
+#ifdef GPTL
+    gptl_ret = gptlstart_handle("::MOM_continuity_PPM::PPM_limit_CW84", gptl_handle)
+#endif
   do j=jis,jie ; do i=iis,iie
     ! This limiter monotonizes the parabola following
     ! Colella and Woodward, 1984, Eq. 1.10
@@ -2212,7 +2470,9 @@ subroutine PPM_limit_CW84(h_in, h_L, h_R, G, iis, iie, jis, jie)
       if ( FunFac < -RLdiff2 ) h_R(i,j) = 3. * h_i - 2. * h_L(i,j)
     endif
   enddo ; enddo
-
+#ifdef GPTL
+    gptl_ret = gptlstop_handle("::MOM_continuity_PPM::PPM_limit_CW84", gptl_handle)
+#endif
   return
 end subroutine PPM_limit_CW84
 
@@ -2222,12 +2482,20 @@ function ratio_max(a, b, maxrat) result(ratio)
   real, intent(in) :: b       !< Denominator
   real, intent(in) :: maxrat  !< Maximum value of ratio.
   real :: ratio               !< Return value.
-
+#ifdef GPTL
+  integer :: gptl_ret, gptl_handle = 0
+#endif
+#ifdef GPTL
+    gptl_ret = gptlstart_handle("::MOM_continuity_PPM::ratio_max", gptl_handle)
+#endif
   if (abs(a) > abs(maxrat*b)) then
     ratio = maxrat
   else
     ratio = a / b
   endif
+#ifdef GPTL
+    gptl_ret = gptlstop_handle("::MOM_continuity_PPM::ratio_max", gptl_handle)
+#endif
 end function ratio_max
 
 !> Initializes continuity_ppm_cs
@@ -2245,8 +2513,17 @@ subroutine continuity_PPM_init(Time, G, GV, US, param_file, diag, CS)
 #include "version_variable.h"
   real :: tol_eta_m  ! An unscaled version of tol_eta [m].
   character(len=40)  :: mdl = "MOM_continuity_PPM" ! This module's name.
+#ifdef GPTL
+  integer :: gptl_ret, gptl_handle = 0
+#endif
+#ifdef GPTL
+    gptl_ret = gptlstart_handle("::MOM_continuity_PPM::continuity_PPM_init", gptl_handle)
+#endif
 
   if (associated(CS)) then
+#ifdef GPTL
+    gptl_ret = gptlstop_handle("::MOM_continuity_PPM::continuity_PPM_init", gptl_handle)
+#endif
     call MOM_error(WARNING, "continuity_PPM_init called with associated control structure.")
     return
   endif
@@ -2254,6 +2531,9 @@ subroutine continuity_PPM_init(Time, G, GV, US, param_file, diag, CS)
 
 ! Read all relevant parameters and write them to the model log.
   call log_version(param_file, mdl, version, "")
+#ifdef GPTL
+    gptl_ret = gptlstop_handle("::MOM_continuity_PPM::continuity_PPM_init", gptl_handle)
+#endif
   call get_param(param_file, mdl, "MONOTONIC_CONTINUITY", CS%monotonic, &
                  "If true, CONTINUITY_PPM uses the Colella and Woodward "//&
                  "monotonic limiter.  The default (false) is to use a "//&
@@ -2318,12 +2598,17 @@ subroutine continuity_PPM_init(Time, G, GV, US, param_file, diag, CS)
                  "If true, use the marginal face areas from the continuity "//&
                  "solver for use as the weights in the barotropic solver. "//&
                  "Otherwise use the transport averaged areas.", default=.true.)
+#ifdef GPTL
+    gptl_ret = gptlstart_handle("::MOM_continuity_PPM::continuity_PPM_init", gptl_handle)
+#endif
 
   CS%diag => diag
 
   id_clock_update = mpp_clock_id('(Ocean continuity update)', grain=CLOCK_ROUTINE)
   id_clock_correct = mpp_clock_id('(Ocean continuity correction)', grain=CLOCK_ROUTINE)
-
+#ifdef GPTL
+    gptl_ret = gptlstop_handle("::MOM_continuity_PPM::continuity_PPM_init", gptl_handle)
+#endif
 end subroutine continuity_PPM_init
 
 !> continuity_PPM_stencil returns the continuity solver stencil size
