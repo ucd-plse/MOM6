@@ -2133,7 +2133,7 @@ subroutine PPM_reconstruction_x(h_in, h_L, h_R, G, LB, h_min, monotonic, simple_
   integer :: gptl_ret, gptl_handle = 0
 #endif
 #ifdef GPTL
-    gptl_ret = gptlstart_handle("::MOM_continuity_PPM::PPM_reconstuction_x", gptl_handle)
+    gptl_ret = gptlstart_handle("::MOM_continuity_PPM::PPM_reconstruction_x", gptl_handle)
 #endif
   use_CW84 = .false. ; if (present(monotonic)) use_CW84 = monotonic
   use_2nd = .false. ; if (present(simple_2nd)) use_2nd = simple_2nd
@@ -2236,7 +2236,7 @@ subroutine PPM_reconstruction_x(h_in, h_L, h_R, G, LB, h_min, monotonic, simple_
   endif
 
 #ifdef GPTL
-    gptl_ret = gptlstop_handle("::MOM_continuity_PPM::PPM_reconstuction_x", gptl_handle)
+    gptl_ret = gptlstop_handle("::MOM_continuity_PPM::PPM_reconstruction_x", gptl_handle)
 #endif
   if (use_CW84) then
     call PPM_limit_CW84(h_in, h_L, h_R, G, isl, iel, jsl, jel)
@@ -2281,7 +2281,7 @@ subroutine PPM_reconstruction_y(h_in, h_L, h_R, G, LB, h_min, monotonic, simple_
   integer :: gptl_ret, gptl_handle = 0
 #endif
 #ifdef GPTL
-    gptl_ret = gptlstart_handle("::MOM_continuity_PPM::PPM_reconstuction_y", gptl_handle)
+    gptl_ret = gptlstart_handle("::MOM_continuity_PPM::PPM_reconstruction_y", gptl_handle)
 #endif
   use_CW84 = .false. ; if (present(monotonic)) use_CW84 = monotonic
   use_2nd = .false. ; if (present(simple_2nd)) use_2nd = simple_2nd
@@ -2382,7 +2382,7 @@ subroutine PPM_reconstruction_y(h_in, h_L, h_R, G, LB, h_min, monotonic, simple_
   endif
 
 #ifdef GPTL
-    gptl_ret = gptlstop_handle("::MOM_continuity_PPM::PPM_reconstuction_y", gptl_handle)
+    gptl_ret = gptlstop_handle("::MOM_continuity_PPM::PPM_reconstruction_y", gptl_handle)
 #endif
   if (use_CW84) then
     call PPM_limit_CW84(h_in, h_L, h_R, G, isl, iel, jsl, jel)
