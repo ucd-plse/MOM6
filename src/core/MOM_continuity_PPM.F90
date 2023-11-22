@@ -309,6 +309,7 @@ subroutine zonal_mass_flux(u, h_in, uh, dt, G, GV, US, CS, LB, uhbt, OBC, &
   logical :: local_specified_BC, use_visc_rem, set_BT_cont, any_simple_OBC
   logical :: local_Flather_OBC, local_open_BC, is_simple
   type(OBC_segment_type), pointer :: segment => NULL()
+  real :: c1_0 = 1.0, c2_0 = 2.0, c_2_0 = -2.0, c0_0 = 0.0, c1000_0 = 1000.0, c0_499 = 0.499
 #ifdef GPTL
   integer :: gptl_ret, gptl_handle = 0
 #endif
@@ -328,7 +329,7 @@ subroutine zonal_mass_flux(u, h_in, uh, dt, G, GV, US, CS, LB, uhbt, OBC, &
   ish = LB%ish ; ieh = LB%ieh ; jsh = LB%jsh ; jeh = LB%jeh ; nz = G%ke
 
   CFL_dt = CS%CFL_limit_adjust / dt
-  I_dt = 1.0 / dt
+  I_dt = c1_0 / dt
   if (CS%aggress_adjust) CFL_dt = I_dt
 
   call mpp_clock_begin(id_clock_update)
@@ -345,13 +346,13 @@ subroutine zonal_mass_flux(u, h_in, uh, dt, G, GV, US, CS, LB, uhbt, OBC, &
     gptl_ret = gptlstop_handle("::MOM_continuity_PPM::zonal_mass_flux", gptl_handle)
 #endif
       call PPM_reconstruction_x(h_in(:,:,k), h_L(:,:,k), h_R(:,:,k), G, LB, &
-                          2.0*GV%Angstrom_H, CS%monotonic, simple_2nd=CS%simple_2nd, OBC=OBC)
+                          c2_0*GV%Angstrom_H, CS%monotonic, simple_2nd=CS%simple_2nd, OBC=OBC)
 #ifdef GPTL
     gptl_ret = gptlstart_handle("::MOM_continuity_PPM::zonal_mass_flux", gptl_handle)
 #endif
 
     endif
-    do I=ish-1,ieh ; visc_rem(I,k) = 1.0 ; enddo
+    do I=ish-1,ieh ; visc_rem(I,k) = c1_0 ; enddo
   enddo
   call mpp_clock_end(id_clock_update)
 
@@ -363,7 +364,7 @@ subroutine zonal_mass_flux(u, h_in, uh, dt, G, GV, US, CS, LB, uhbt, OBC, &
 !$OMP                                  is_simple,FAuI,visc_rem_max,I_vrm,du_lim,dx_E,dx_W,any_simple_OBC ) &
 !$OMP      firstprivate(visc_rem)
   do j=jsh,jeh
-    do I=ish-1,ieh ; do_I(I) = .true. ; visc_rem_max(I) = 0.0 ; enddo
+    do I=ish-1,ieh ; do_I(I) = .true. ; visc_rem_max(I) = c0_0 ; enddo
     ! Set uh and duhdu.
     do k=1,nz
       if (use_visc_rem) then ; do I=ish-1,ieh
@@ -389,22 +390,22 @@ subroutine zonal_mass_flux(u, h_in, uh, dt, G, GV, US, CS, LB, uhbt, OBC, &
     enddo
 
     if ((.not.use_visc_rem).or.(.not.CS%use_visc_rem_max)) then ; do I=ish-1,ieh
-      visc_rem_max(I) = 1.0
+      visc_rem_max(I) = c1_0
     enddo ; endif
 
     if (present(uhbt) .or. set_BT_cont) then
       !   Set limits on du that will keep the CFL number between -1 and 1.
       ! This should be adequate to keep the root bracketed in all cases.
       do I=ish-1,ieh
-        I_vrm = 0.0
-        if (visc_rem_max(I) > 0.0) I_vrm = 1.0 / visc_rem_max(I)
+        I_vrm = c0_0
+        if (visc_rem_max(I) > c0_0) I_vrm = c1_0 / visc_rem_max(I)
         if (CS%vol_CFL) then
-          dx_W = ratio_max(G%areaT(i,j), G%dy_Cu(I,j), 1000.0*G%dxT(i,j))
-          dx_E = ratio_max(G%areaT(i+1,j), G%dy_Cu(I,j), 1000.0*G%dxT(i+1,j))
+          dx_W = ratio_max(G%areaT(i,j), G%dy_Cu(I,j), c1000_0*G%dxT(i,j))
+          dx_E = ratio_max(G%areaT(i+1,j), G%dy_Cu(I,j), c1000_0*G%dxT(i+1,j))
         else ; dx_W = G%dxT(i,j) ; dx_E = G%dxT(i+1,j) ; endif
-        du_max_CFL(I) = 2.0* (CFL_dt * dx_W) * I_vrm
-        du_min_CFL(I) = -2.0 * (CFL_dt * dx_E) * I_vrm
-        uh_tot_0(I) = 0.0 ; duhdu_tot_0(I) = 0.0
+        du_max_CFL(I) = c2_0* (CFL_dt * dx_W) * I_vrm
+        du_min_CFL(I) = c_2_0 * (CFL_dt * dx_E) * I_vrm
+        uh_tot_0(I) = c0_0 ; duhdu_tot_0(I) = c0_0
       enddo
       do k=1,nz ; do I=ish-1,ieh
         duhdu_tot_0(I) = duhdu_tot_0(I) + duhdu(I,k)
@@ -414,23 +415,23 @@ subroutine zonal_mass_flux(u, h_in, uh, dt, G, GV, US, CS, LB, uhbt, OBC, &
         if (CS%aggress_adjust) then
           do k=1,nz ; do I=ish-1,ieh
             if (CS%vol_CFL) then
-              dx_W = ratio_max(G%areaT(i,j), G%dy_Cu(I,j), 1000.0*G%dxT(i,j))
-              dx_E = ratio_max(G%areaT(i+1,j), G%dy_Cu(I,j), 1000.0*G%dxT(i+1,j))
+              dx_W = ratio_max(G%areaT(i,j), G%dy_Cu(I,j), c1000_0*G%dxT(i,j))
+              dx_E = ratio_max(G%areaT(i+1,j), G%dy_Cu(I,j), c1000_0*G%dxT(i+1,j))
             else ; dx_W = G%dxT(i,j) ; dx_E = G%dxT(i+1,j) ; endif
 
-            du_lim = 0.499*((dx_W*I_dt - u(I,j,k)) + MIN(0.0,u(I-1,j,k)))
+            du_lim = c0_499*((dx_W*I_dt - u(I,j,k)) + MIN(c0_0,u(I-1,j,k)))
             if (du_max_CFL(I) * visc_rem(I,k) > du_lim) &
               du_max_CFL(I) = du_lim / visc_rem(I,k)
 
-            du_lim = 0.499*((-dx_E*I_dt - u(I,j,k)) + MAX(0.0,u(I+1,j,k)))
+            du_lim = c0_499*((-dx_E*I_dt - u(I,j,k)) + MAX(c0_0,u(I+1,j,k)))
             if (du_min_CFL(I) * visc_rem(I,k) < du_lim) &
               du_min_CFL(I) = du_lim / visc_rem(I,k)
           enddo ; enddo
         else
           do k=1,nz ; do I=ish-1,ieh
             if (CS%vol_CFL) then
-              dx_W = ratio_max(G%areaT(i,j), G%dy_Cu(I,j), 1000.0*G%dxT(i,j))
-              dx_E = ratio_max(G%areaT(i+1,j), G%dy_Cu(I,j), 1000.0*G%dxT(i+1,j))
+              dx_W = ratio_max(G%areaT(i,j), G%dy_Cu(I,j), c1000_0*G%dxT(i,j))
+              dx_E = ratio_max(G%areaT(i+1,j), G%dy_Cu(I,j), c1000_0*G%dxT(i+1,j))
             else ; dx_W = G%dxT(i,j) ; dx_E = G%dxT(i+1,j) ; endif
 
             if (du_max_CFL(I) * visc_rem(I,k) > dx_W*CFL_dt - u(I,j,k)) &
@@ -443,20 +444,20 @@ subroutine zonal_mass_flux(u, h_in, uh, dt, G, GV, US, CS, LB, uhbt, OBC, &
         if (CS%aggress_adjust) then
           do k=1,nz ; do I=ish-1,ieh
             if (CS%vol_CFL) then
-              dx_W = ratio_max(G%areaT(i,j), G%dy_Cu(I,j), 1000.0*G%dxT(i,j))
-              dx_E = ratio_max(G%areaT(i+1,j), G%dy_Cu(I,j), 1000.0*G%dxT(i+1,j))
+              dx_W = ratio_max(G%areaT(i,j), G%dy_Cu(I,j), c1000_0*G%dxT(i,j))
+              dx_E = ratio_max(G%areaT(i+1,j), G%dy_Cu(I,j), c1000_0*G%dxT(i+1,j))
             else ; dx_W = G%dxT(i,j) ; dx_E = G%dxT(i+1,j) ; endif
 
-            du_max_CFL(I) = MIN(du_max_CFL(I), 0.499 * &
-                        ((dx_W*I_dt - u(I,j,k)) + MIN(0.0,u(I-1,j,k))) )
-            du_min_CFL(I) = MAX(du_min_CFL(I), 0.499 * &
-                        ((-dx_E*I_dt - u(I,j,k)) + MAX(0.0,u(I+1,j,k))) )
+            du_max_CFL(I) = MIN(du_max_CFL(I), c0_499 * &
+                        ((dx_W*I_dt - u(I,j,k)) + MIN(c0_0,u(I-1,j,k))) )
+            du_min_CFL(I) = MAX(du_min_CFL(I), c0_499 * &
+                        ((-dx_E*I_dt - u(I,j,k)) + MAX(c0_0,u(I+1,j,k))) )
           enddo ; enddo
         else
           do k=1,nz ; do I=ish-1,ieh
             if (CS%vol_CFL) then
-              dx_W = ratio_max(G%areaT(i,j), G%dy_Cu(I,j), 1000.0*G%dxT(i,j))
-              dx_E = ratio_max(G%areaT(i+1,j), G%dy_Cu(I,j), 1000.0*G%dxT(i+1,j))
+              dx_W = ratio_max(G%areaT(i,j), G%dy_Cu(I,j), c1000_0*G%dxT(i,j))
+              dx_E = ratio_max(G%areaT(i+1,j), G%dy_Cu(I,j), c1000_0*G%dxT(i+1,j))
             else ; dx_W = G%dxT(i,j) ; dx_E = G%dxT(i+1,j) ; endif
 
             du_max_CFL(I) = MIN(du_max_CFL(I), dx_W*CFL_dt - u(I,j,k))
@@ -465,8 +466,8 @@ subroutine zonal_mass_flux(u, h_in, uh, dt, G, GV, US, CS, LB, uhbt, OBC, &
         endif
       endif
       do I=ish-1,ieh
-        du_max_CFL(I) = max(du_max_CFL(I),0.0)
-        du_min_CFL(I) = min(du_min_CFL(I),0.0)
+        du_max_CFL(I) = max(du_max_CFL(I),c0_0)
+        du_min_CFL(I) = min(du_min_CFL(I),c0_0)
       enddo
 
       any_simple_OBC = .false.
@@ -518,7 +519,7 @@ subroutine zonal_mass_flux(u, h_in, uh, dt, G, GV, US, CS, LB, uhbt, OBC, &
             if (do_I(I)) FAuI(I) = GV%H_subroundoff*G%dy_Cu(I,j)
           enddo
           do k=1,nz ; do I=ish-1,ieh ; if (do_I(I)) then
-            if ((abs(OBC%segment(OBC%segnum_u(I,j))%normal_vel(I,j,k)) > 0.0) .and. &
+            if ((abs(OBC%segment(OBC%segnum_u(I,j))%normal_vel(I,j,k)) > c0_0) .and. &
                 (OBC%segment(OBC%segnum_u(I,j))%specified)) &
               FAuI(I) = FAuI(I) + OBC%segment(OBC%segnum_u(I,j))%normal_trans(I,j,k) / &
                                   OBC%segment(OBC%segnum_u(I,j))%normal_vel(I,j,k)
@@ -526,7 +527,7 @@ subroutine zonal_mass_flux(u, h_in, uh, dt, G, GV, US, CS, LB, uhbt, OBC, &
           do I=ish-1,ieh ; if (do_I(I)) then
             BT_cont%FA_u_W0(I,j) = FAuI(I) ; BT_cont%FA_u_E0(I,j) = FAuI(I)
             BT_cont%FA_u_WW(I,j) = FAuI(I) ; BT_cont%FA_u_EE(I,j) = FAuI(I)
-            BT_cont%uBT_WW(I,j) = 0.0 ; BT_cont%uBT_EE(I,j) = 0.0
+            BT_cont%uBT_WW(I,j) = c0_0 ; BT_cont%uBT_EE(I,j) = c0_0
           endif ; enddo
         endif
       endif ! set_BT_cont
@@ -541,19 +542,19 @@ subroutine zonal_mass_flux(u, h_in, uh, dt, G, GV, US, CS, LB, uhbt, OBC, &
         I = OBC%segment(n)%HI%IsdB
         if (OBC%segment(n)%direction == OBC_DIRECTION_E) then
           do J = OBC%segment(n)%HI%Jsd, OBC%segment(n)%HI%Jed
-            FA_u = 0.0
+            FA_u = c0_0
             do k=1,nz ; FA_u = FA_u + h_in(i,j,k)*G%dy_Cu(I,j) ; enddo
             BT_cont%FA_u_W0(I,j) = FA_u ; BT_cont%FA_u_E0(I,j) = FA_u
             BT_cont%FA_u_WW(I,j) = FA_u ; BT_cont%FA_u_EE(I,j) = FA_u
-            BT_cont%uBT_WW(I,j) = 0.0 ; BT_cont%uBT_EE(I,j) = 0.0
+            BT_cont%uBT_WW(I,j) = c0_0 ; BT_cont%uBT_EE(I,j) = c0_0
           enddo
         else
           do J = OBC%segment(n)%HI%Jsd, OBC%segment(n)%HI%Jed
-            FA_u = 0.0
+            FA_u = c0_0
             do k=1,nz ; FA_u = FA_u + h_in(i+1,j,k)*G%dy_Cu(I,j) ; enddo
             BT_cont%FA_u_W0(I,j) = FA_u ; BT_cont%FA_u_E0(I,j) = FA_u
             BT_cont%FA_u_WW(I,j) = FA_u ; BT_cont%FA_u_EE(I,j) = FA_u
-            BT_cont%uBT_WW(I,j) = 0.0 ; BT_cont%uBT_EE(I,j) = 0.0
+            BT_cont%uBT_WW(I,j) = c0_0 ; BT_cont%uBT_EE(I,j) = c0_0
           enddo
         endif
       endif
@@ -620,6 +621,7 @@ subroutine zonal_flux_layer(u, h, h_L, h_R, uh, duhdu, visc_rem, dt, G, US, j, &
   real :: h_marg ! The marginal thickness of a flux [H ~> m or kg m-2].
   integer :: i
   logical :: local_open_BC
+  real :: c0_0 = 0.0, c1_0 = 1.0, c2_0 = 2.0, c0_5 = 0.5, c3_0 = 3.0, c1_5 = 1.5
 #ifdef GPTL
   integer :: gptl_ret, gptl_handle = 0
 #endif
@@ -633,23 +635,23 @@ subroutine zonal_flux_layer(u, h, h_L, h_R, uh, duhdu, visc_rem, dt, G, US, j, &
 
   do I=ish-1,ieh ; if (do_I(I)) then
     ! Set new values of uh and duhdu.
-    if (u(I) > 0.0) then
+    if (u(I) > c0_0) then
       if (vol_CFL) then ; CFL = (u(I) * dt) * (G%dy_Cu(I,j) * G%IareaT(i,j))
       else ; CFL = u(I) * dt * G%IdxT(i,j) ; endif
-      curv_3 = h_L(i) + h_R(i) - 2.0*h(i)
+      curv_3 = h_L(i) + h_R(i) - c2_0*h(i)
       uh(I) = G%dy_Cu(I,j) * u(I) * &
-          (h_R(i) + CFL * (0.5*(h_L(i) - h_R(i)) + curv_3*(CFL - 1.5)))
-      h_marg = h_R(i) + CFL * ((h_L(i) - h_R(i)) + 3.0*curv_3*(CFL - 1.0))
-    elseif (u(I) < 0.0) then
+          (h_R(i) + CFL * (c0_5*(h_L(i) - h_R(i)) + curv_3*(CFL - c1_5)))
+      h_marg = h_R(i) + CFL * ((h_L(i) - h_R(i)) + c3_0*curv_3*(CFL - c1_0))
+    elseif (u(I) < c0_0) then
       if (vol_CFL) then ; CFL = (-u(I) * dt) * (G%dy_Cu(I,j) * G%IareaT(i+1,j))
       else ; CFL = -u(I) * dt * G%IdxT(i+1,j) ; endif
-      curv_3 = h_L(i+1) + h_R(i+1) - 2.0*h(i+1)
+      curv_3 = h_L(i+1) + h_R(i+1) - c2_0*h(i+1)
       uh(I) = G%dy_Cu(I,j) * u(I) * &
-          (h_L(i+1) + CFL * (0.5*(h_R(i+1)-h_L(i+1)) + curv_3*(CFL - 1.5)))
-      h_marg = h_L(i+1) + CFL * ((h_R(i+1)-h_L(i+1)) + 3.0*curv_3*(CFL - 1.0))
+          (h_L(i+1) + CFL * (c0_5*(h_R(i+1)-h_L(i+1)) + curv_3*(CFL - c1_5)))
+      h_marg = h_L(i+1) + CFL * ((h_R(i+1)-h_L(i+1)) + c3_0*curv_3*(CFL - c1_0))
     else
-      uh(I) = 0.0
-      h_marg = 0.5 * (h_L(i+1) + h_R(i))
+      uh(I) = c0_0
+      h_marg = c0_5 * (h_L(i+1) + h_R(i))
     endif
     duhdu(I) = G%dy_Cu(I,j) * h_marg * visc_rem(I)
   endif ; enddo
@@ -707,6 +709,7 @@ subroutine zonal_face_thickness(u, h, h_L, h_R, h_u, dt, G, US, LB, vol_CFL, &
   real :: h_marg ! The marginal thickness of a flux [H ~> m or kg m-2].
   logical :: local_open_BC
   integer :: i, j, k, ish, ieh, jsh, jeh, nz, n
+  real :: c0_0 = 0.0, c0_5 = 0.5, c2_0 = 2.0, c3_0 = 3.0, c1_5 = 1.5, c1_0 = 1.0
 #ifdef GPTL
   integer :: gptl_ret, gptl_handle = 0
 #endif
@@ -717,31 +720,31 @@ subroutine zonal_face_thickness(u, h, h_L, h_R, h_u, dt, G, US, LB, vol_CFL, &
 
   !$OMP parallel do default(shared) private(CFL,curv_3,h_marg,h_avg)
   do k=1,nz ; do j=jsh,jeh ; do I=ish-1,ieh
-    if (u(I,j,k) > 0.0) then
+    if (u(I,j,k) > c0_0) then
       if (vol_CFL) then
         CFL = (u(I,j,k) * dt) * (G%dy_Cu(I,j) * G%IareaT(i,j))
       else
         CFL = u(I,j,k) * dt * G%IdxT(i,j)
       endif
-      curv_3 = h_L(i,j,k) + h_R(i,j,k) - 2.0*h(i,j,k)
-      h_avg = h_R(i,j,k) + CFL * (0.5*(h_L(i,j,k) - h_R(i,j,k)) + curv_3*(CFL - 1.5))
-      h_marg = h_R(i,j,k) + CFL * ((h_L(i,j,k) - h_R(i,j,k)) + 3.0*curv_3*(CFL - 1.0))
-    elseif (u(I,j,k) < 0.0) then
+      curv_3 = h_L(i,j,k) + h_R(i,j,k) - c2_0*h(i,j,k)
+      h_avg = h_R(i,j,k) + CFL * (c0_5*(h_L(i,j,k) - h_R(i,j,k)) + curv_3*(CFL - c1_5))
+      h_marg = h_R(i,j,k) + CFL * ((h_L(i,j,k) - h_R(i,j,k)) + c3_0*curv_3*(CFL - c1_0))
+    elseif (u(I,j,k) < c0_0) then
       if (vol_CFL) then
         CFL = (-u(I,j,k)*dt) * (G%dy_Cu(I,j) * G%IareaT(i+1,j))
       else
         CFL = -u(I,j,k) * dt * G%IdxT(i+1,j)
       endif
-      curv_3 = h_L(i+1,j,k) + h_R(i+1,j,k) - 2.0*h(i+1,j,k)
-      h_avg = h_L(i+1,j,k) + CFL * (0.5*(h_R(i+1,j,k)-h_L(i+1,j,k)) + curv_3*(CFL - 1.5))
+      curv_3 = h_L(i+1,j,k) + h_R(i+1,j,k) - c2_0*h(i+1,j,k)
+      h_avg = h_L(i+1,j,k) + CFL * (c0_5*(h_R(i+1,j,k)-h_L(i+1,j,k)) + curv_3*(CFL - c1_5))
       h_marg = h_L(i+1,j,k) + CFL * ((h_R(i+1,j,k)-h_L(i+1,j,k)) + &
-                                    3.0*curv_3*(CFL - 1.0))
+                                    c3_0*curv_3*(CFL - c1_0))
     else
-      h_avg = 0.5 * (h_L(i+1,j,k) + h_R(i,j,k))
+      h_avg = c0_5 * (h_L(i+1,j,k) + h_R(i,j,k))
       !   The choice to use the arithmetic mean here is somewhat arbitrariy, but
       ! it should be noted that h_L(i+1,j,k) and h_R(i,j,k) are usually the same.
-      h_marg = 0.5 * (h_L(i+1,j,k) + h_R(i,j,k))
- !    h_marg = (2.0 * h_L(i+1,j,k) * h_R(i,j,k)) / &
+      h_marg = c0_5 * (h_L(i+1,j,k) + h_R(i,j,k))
+ !    h_marg = (c2_0 * h_L(i+1,j,k) * h_R(i,j,k)) / &
  !             (h_L(i+1,j,k) + h_R(i,j,k) + GV%H_subroundoff)
     endif
 
@@ -867,6 +870,7 @@ subroutine zonal_flux_adjust(u, h_in, h_L, h_R, uhbt, uh_tot_0, duhdu_tot_0, &
   real :: tol_vel ! The tolerance for velocity in the current iteration [L T-1 ~> m s-1].
   integer :: i, k, nz, itt, max_itts = 20
   logical :: full_prec, domore, do_I(SZIB_(G))
+  real :: c1e_6 = 1e-6, c1e_15 = 1e-15, c1e_4 = 1e-4, c1e_2 = 1e-2, c0_0 = 0.0, c0_5 = 0.5
 #ifdef GPTL
   integer :: gptl_ret, gptl_handle = 0
 #endif
@@ -876,7 +880,7 @@ subroutine zonal_flux_adjust(u, h_in, h_L, h_R, uhbt, uh_tot_0, duhdu_tot_0, &
   nz = G%ke
   full_prec = .true. ; if (present(full_precision)) full_prec = full_precision
 
-  uh_aux(:,:) = 0.0 ; duhdu(:,:) = 0.0
+  uh_aux(:,:) = c0_0 ; duhdu(:,:) = c0_0
 
   if (present(uh_3d)) then
     do k=1,nz ; do I=ish-1,ieh
@@ -885,7 +889,7 @@ subroutine zonal_flux_adjust(u, h_in, h_L, h_R, uhbt, uh_tot_0, duhdu_tot_0, &
   endif
 
   do I=ish-1,ieh
-    du(I) = 0.0 ; do_I(I) = do_I_in(I)
+    du(I) = c0_0 ; do_I(I) = do_I_in(I)
     du_max(I) = du_max_CFL(I) ; du_min(I) = du_min_CFL(I)
     uh_err(I) = uh_tot_0(I) - uhbt(I) ; duhdu_tot(I) = duhdu_tot_0(I)
     uh_err_best(I) = abs(uh_err(I))
@@ -894,20 +898,20 @@ subroutine zonal_flux_adjust(u, h_in, h_L, h_R, uhbt, uh_tot_0, duhdu_tot_0, &
   do itt=1,max_itts
     if (full_prec) then
       select case (itt)
-        case (:1) ; tol_eta = 1e-6 * CS%tol_eta
-        case (2)  ; tol_eta = 1e-4 * CS%tol_eta
-        case (3)  ; tol_eta = 1e-2 * CS%tol_eta
+        case (:1) ; tol_eta = c1e_6 * CS%tol_eta
+        case (2)  ; tol_eta = c1e_4 * CS%tol_eta
+        case (3)  ; tol_eta = c1e_2 * CS%tol_eta
         case default ; tol_eta = CS%tol_eta
       end select
     else
-      tol_eta = CS%tol_eta_aux ; if (itt<=1) tol_eta = 1e-6 * CS%tol_eta_aux
+      tol_eta = CS%tol_eta_aux ; if (itt<=1) tol_eta = c1e_6 * CS%tol_eta_aux
     endif
     tol_vel = CS%tol_vel
 
     do I=ish-1,ieh
-      if (uh_err(I) > 0.0) then
+      if (uh_err(I) > c0_0) then
         du_max(I) = du(I)
-      elseif (uh_err(I) < 0.0) then
+      elseif (uh_err(I) < c0_0) then
         du_min(I) = du(I)
       else
         do_I(I) = .false.
@@ -924,24 +928,24 @@ subroutine zonal_flux_adjust(u, h_in, h_L, h_R, uhbt, uh_tot_0, duhdu_tot_0, &
           ddu = -uh_err(I) / duhdu_tot(I)
           du_prev = du(I)
           du(I) = du(I) + ddu
-          if (abs(ddu) < 1.0e-15*abs(du(I))) then
+          if (abs(ddu) < c1e_15*abs(du(I))) then
             do_I(I) = .false. ! ddu is small enough to quit.
-          elseif (ddu > 0.0) then
+          elseif (ddu > c0_0) then
             if (du(I) >= du_max(I)) then
-              du(I) = 0.5*(du_prev + du_max(I))
-              if (du_max(I) - du_prev < 1.0e-15*abs(du(I))) do_I(I) = .false.
+              du(I) = c0_5*(du_prev + du_max(I))
+              if (du_max(I) - du_prev < c1e_15*abs(du(I))) do_I(I) = .false.
             endif
-          else ! ddu < 0.0
+          else ! ddu < c0_0
             if (du(I) <= du_min(I)) then
-              du(I) = 0.5*(du_prev + du_min(I))
-              if (du_prev - du_min(I) < 1.0e-15*abs(du(I))) do_I(I) = .false.
+              du(I) = c0_5*(du_prev + du_min(I))
+              if (du_prev - du_min(I) < c1e_15*abs(du(I))) do_I(I) = .false.
             endif
           endif
         else
           !   Use Newton's method, provided it stays bounded, just like above.
           du(I) = du(I) - uh_err(I) / duhdu_tot(I)
           if ((du(I) >= du_max(I)) .or. (du(I) <= du_min(I))) &
-            du(I) = 0.5*(du_max(I) + du_min(I))
+            du(I) = c0_5*(du_max(I) + du_min(I))
         endif
         if (do_I(I)) domore = .true.
       else
@@ -968,7 +972,7 @@ subroutine zonal_flux_adjust(u, h_in, h_L, h_R, uhbt, uh_tot_0, duhdu_tot_0, &
 
     if (itt < max_itts) then
       do I=ish-1,ieh
-        uh_err(I) = -uhbt(I) ; duhdu_tot(I) = 0.0
+        uh_err(I) = -uhbt(I) ; duhdu_tot(I) = c0_0
       enddo
       do k=1,nz ; do I=ish-1,ieh
         uh_err(I) = uh_err(I) + uh_aux(I,k)
@@ -1063,17 +1067,18 @@ subroutine set_zonal_BT_cont(u, h_in, h_L, h_R, BT_cont, uh_tot_0, duhdu_tot_0, 
   real :: Idt     ! The inverse of the time step [T-1 ~> s-1].
   logical :: domore
   integer :: i, k, nz
+  real :: c0_1 = 0.1, c1_0 = 1.0, c1e_6 = 1e-6, c0_0 = 0.0, c1e_12 = 1e-12, c1_5 = 1.5 
 #ifdef GPTL
   integer :: gptl_ret, gptl_handle = 0
 #endif
 #ifdef GPTL
     gptl_ret = gptlstart_handle("::MOM_continuity_PPM::set_zonal_BT_cont", gptl_handle)
 #endif
-  nz = G%ke ; Idt = 1.0 / dt
-  min_visc_rem = 0.1 ; CFL_min = 1e-6
+  nz = G%ke ; Idt = c1_0 / dt
+  min_visc_rem = c0_1 ; CFL_min = c1e_6
 
  ! Diagnose the zero-transport correction, du0.
-  do I=ish-1,ieh ; zeros(I) = 0.0 ; enddo
+  do I=ish-1,ieh ; zeros(I) = c0_0 ; enddo
 #ifdef GPTL
     gptl_ret = gptlstop_handle("::MOM_continuity_PPM::set_zonal_BT_cont", gptl_handle)
 #endif
@@ -1091,17 +1096,17 @@ subroutine set_zonal_BT_cont(u, h_in, h_L, h_R, BT_cont, uh_tot_0, duhdu_tot_0, 
   do I=ish-1,ieh
     if (do_I(I)) domore = .true.
     du_CFL(I) = (CFL_min * Idt) * G%dxCu(I,j)
-    duR(I) = min(0.0,du0(I) - du_CFL(I))
-    duL(I) = max(0.0,du0(I) + du_CFL(I))
-    FAmt_L(I) = 0.0 ; FAmt_R(I) = 0.0 ; FAmt_0(I) = 0.0
-    uhtot_L(I) = 0.0 ; uhtot_R(I) = 0.0
+    duR(I) = min(c0_0,du0(I) - du_CFL(I))
+    duL(I) = max(c0_0,du0(I) + du_CFL(I))
+    FAmt_L(I) = c0_0 ; FAmt_R(I) = c0_0 ; FAmt_0(I) = c0_0
+    uhtot_L(I) = c0_0 ; uhtot_R(I) = c0_0
   enddo
 
   if (.not.domore) then
     do k=1,nz ; do I=ish-1,ieh
-      BT_cont%FA_u_W0(I,j) = 0.0 ; BT_cont%FA_u_WW(I,j) = 0.0
-      BT_cont%FA_u_E0(I,j) = 0.0 ; BT_cont%FA_u_EE(I,j) = 0.0
-      BT_cont%uBT_WW(I,j) = 0.0 ; BT_cont%uBT_EE(I,j) = 0.0
+      BT_cont%FA_u_W0(I,j) = c0_0 ; BT_cont%FA_u_WW(I,j) = c0_0
+      BT_cont%FA_u_E0(I,j) = c0_0 ; BT_cont%FA_u_EE(I,j) = c0_0
+      BT_cont%uBT_WW(I,j) = c0_0 ; BT_cont%uBT_EE(I,j) = c0_0
     enddo ; enddo
 #ifdef GPTL
     gptl_ret = gptlstop_handle("::MOM_continuity_PPM::set_zonal_BT_cont", gptl_handle)
@@ -1111,7 +1116,7 @@ subroutine set_zonal_BT_cont(u, h_in, h_L, h_R, BT_cont, uh_tot_0, duhdu_tot_0, 
 
   do k=1,nz ; do I=ish-1,ieh ; if (do_I(I)) then
     visc_rem_lim = max(visc_rem(I,k), min_visc_rem*visc_rem_max(I))
-    if (visc_rem_lim > 0.0) then ! This is almost always true for ocean points.
+    if (visc_rem_lim > c0_0) then ! This is almost always true for ocean points.
       if (u(I,j,k) + duR(I)*visc_rem_lim > -du_CFL(I)*visc_rem(I,k)) &
         duR(I) = -(u(I,j,k) + du_CFL(I)*visc_rem(I,k)) / visc_rem_lim
       if (u(I,j,k) + duL(I)*visc_rem_lim < du_CFL(I)*visc_rem(I,k)) &
@@ -1147,7 +1152,7 @@ subroutine set_zonal_BT_cont(u, h_in, h_L, h_R, BT_cont, uh_tot_0, duhdu_tot_0, 
   enddo
   do I=ish-1,ieh ; if (do_I(I)) then
     FA_0 = FAmt_0(I) ; FA_avg = FAmt_0(I)
-    if ((duL(I) - du0(I)) /= 0.0) &
+    if ((duL(I) - du0(I)) /= c0_0) &
       FA_avg = uhtot_L(I) / (duL(I) - du0(I))
     if (FA_avg > max(FA_0, FAmt_L(I))) then
       FA_avg = max(FA_0, FAmt_L(I))
@@ -1156,15 +1161,15 @@ subroutine set_zonal_BT_cont(u, h_in, h_L, h_R, BT_cont, uh_tot_0, duhdu_tot_0, 
     endif
 
     BT_cont%FA_u_W0(I,j) = FA_0 ; BT_cont%FA_u_WW(I,j) = FAmt_L(I)
-    if (abs(FA_0-FAmt_L(I)) <= 1e-12*FA_0) then
-      BT_cont%uBT_WW(I,j) = 0.0
+    if (abs(FA_0-FAmt_L(I)) <= c1e_12*FA_0) then
+      BT_cont%uBT_WW(I,j) = c0_0
     else
-      BT_cont%uBT_WW(I,j) = (1.5 * (duL(I) - du0(I))) * &
+      BT_cont%uBT_WW(I,j) = (c1_5 * (duL(I) - du0(I))) * &
                             ((FAmt_L(I) - FA_avg) / (FAmt_L(I) - FA_0))
     endif
 
     FA_0 = FAmt_0(I) ; FA_avg = FAmt_0(I)
-    if ((duR(I) - du0(I)) /= 0.0) &
+    if ((duR(I) - du0(I)) /= c0_0) &
       FA_avg = uhtot_R(I) / (duR(I) - du0(I))
     if (FA_avg > max(FA_0, FAmt_R(I))) then
       FA_avg = max(FA_0, FAmt_R(I))
@@ -1174,15 +1179,15 @@ subroutine set_zonal_BT_cont(u, h_in, h_L, h_R, BT_cont, uh_tot_0, duhdu_tot_0, 
 
     BT_cont%FA_u_E0(I,j) = FA_0 ; BT_cont%FA_u_EE(I,j) = FAmt_R(I)
     if (abs(FAmt_R(I) - FA_0) <= 1e-12*FA_0) then
-      BT_cont%uBT_EE(I,j) = 0.0
+      BT_cont%uBT_EE(I,j) = c0_0
     else
-      BT_cont%uBT_EE(I,j) = (1.5 * (duR(I) - du0(I))) * &
+      BT_cont%uBT_EE(I,j) = (c1_5 * (duR(I) - du0(I))) * &
                             ((FAmt_R(I) - FA_avg) / (FAmt_R(I) - FA_0))
     endif
   else
-    BT_cont%FA_u_W0(I,j) = 0.0 ; BT_cont%FA_u_WW(I,j) = 0.0
-    BT_cont%FA_u_E0(I,j) = 0.0 ; BT_cont%FA_u_EE(I,j) = 0.0
-    BT_cont%uBT_WW(I,j) = 0.0 ; BT_cont%uBT_EE(I,j) = 0.0
+    BT_cont%FA_u_W0(I,j) = c0_0 ; BT_cont%FA_u_WW(I,j) = c0_0
+    BT_cont%FA_u_E0(I,j) = c0_0 ; BT_cont%FA_u_EE(I,j) = c0_0
+    BT_cont%uBT_WW(I,j) = c0_0 ; BT_cont%uBT_EE(I,j) = c0_0
   endif ; enddo
 #ifdef GPTL
     gptl_ret = gptlstop_handle("::MOM_continuity_PPM::set_zonal_BT_cont", gptl_handle)
@@ -1246,6 +1251,7 @@ subroutine meridional_mass_flux(v, h_in, vh, dt, G, GV, US, CS, LB, vhbt, OBC, &
   logical :: local_specified_BC, use_visc_rem, set_BT_cont, any_simple_OBC
   logical :: local_Flather_OBC, is_simple, local_open_BC
   type(OBC_segment_type), pointer :: segment => NULL()
+  real :: c1_0 = 1.0, c2_0 = 2.0, c_2_0 = -2.0, c0_0 = 0.0, c1000_0 = 1000.0, c0_499 = 0.499
 #ifdef GPTL
   integer :: gptl_ret, gptl_handle = 0
 #endif
@@ -1264,7 +1270,7 @@ subroutine meridional_mass_flux(v, h_in, vh, dt, G, GV, US, CS, LB, vhbt, OBC, &
   ish = LB%ish ; ieh = LB%ieh ; jsh = LB%jsh ; jeh = LB%jeh ; nz = G%ke
 
   CFL_dt = CS%CFL_limit_adjust / dt
-  I_dt = 1.0 / dt
+  I_dt = c1_0 / dt
   if (CS%aggress_adjust) CFL_dt = I_dt
 
   call mpp_clock_begin(id_clock_update)
@@ -1280,12 +1286,12 @@ subroutine meridional_mass_flux(v, h_in, vh, dt, G, GV, US, CS, LB, vhbt, OBC, &
     gptl_ret = gptlstop_handle("::MOM_continuity_PPM::meridional_mass_flux", gptl_handle)
 #endif
       call PPM_reconstruction_y(h_in(:,:,k), h_L(:,:,k), h_R(:,:,k), G, LB, &
-                                2.0*GV%Angstrom_H, CS%monotonic, simple_2nd=CS%simple_2nd, OBC=OBC)
+                                c2_0*GV%Angstrom_H, CS%monotonic, simple_2nd=CS%simple_2nd, OBC=OBC)
 #ifdef GPTL
     gptl_ret = gptlstart_handle("::MOM_continuity_PPM::meridional_mass_flux", gptl_handle)
 #endif
     endif
-    do i=ish,ieh ; visc_rem(i,k) = 1.0 ; enddo
+    do i=ish,ieh ; visc_rem(i,k) = c1_0 ; enddo
   enddo
   call mpp_clock_end(id_clock_update)
 
@@ -1298,7 +1304,7 @@ subroutine meridional_mass_flux(v, h_in, vh, dt, G, GV, US, CS, LB, vhbt, OBC, &
 !$OMP                                  is_simple,FAvi,dy_S,any_simple_OBC ) &
 !$OMP                     firstprivate(visc_rem)
   do J=jsh-1,jeh
-    do i=ish,ieh ; do_I(i) = .true. ; visc_rem_max(I) = 0.0 ; enddo
+    do i=ish,ieh ; do_I(i) = .true. ; visc_rem_max(I) = c0_0 ; enddo
     ! This sets vh and dvhdv.
     do k=1,nz
       if (use_visc_rem) then ; do i=ish,ieh
@@ -1322,22 +1328,22 @@ subroutine meridional_mass_flux(v, h_in, vh, dt, G, GV, US, CS, LB, vhbt, OBC, &
       endif
     enddo ! k-loop
     if ((.not.use_visc_rem) .or. (.not.CS%use_visc_rem_max)) then ; do i=ish,ieh
-      visc_rem_max(i) = 1.0
+      visc_rem_max(i) = c1_0
     enddo ; endif
 
     if (present(vhbt) .or. set_BT_cont) then
       !   Set limits on dv that will keep the CFL number between -1 and 1.
       ! This should be adequate to keep the root bracketed in all cases.
       do i=ish,ieh
-        I_vrm = 0.0
-        if (visc_rem_max(i) > 0.0) I_vrm = 1.0 / visc_rem_max(i)
+        I_vrm = c0_0
+        if (visc_rem_max(i) > c0_0) I_vrm = c1_0 / visc_rem_max(i)
         if (CS%vol_CFL) then
-          dy_S = ratio_max(G%areaT(i,j), G%dx_Cv(i,J), 1000.0*G%dyT(i,j))
-          dy_N = ratio_max(G%areaT(i,j+1), G%dx_Cv(i,J), 1000.0*G%dyT(i,j+1))
+          dy_S = ratio_max(G%areaT(i,j), G%dx_Cv(i,J), c1000_0*G%dyT(i,j))
+          dy_N = ratio_max(G%areaT(i,j+1), G%dx_Cv(i,J), c1000_0*G%dyT(i,j+1))
         else ; dy_S = G%dyT(i,j) ; dy_N = G%dyT(i,j+1) ; endif
-        dv_max_CFL(i) = 2.0 * (CFL_dt * dy_S) * I_vrm
-        dv_min_CFL(i) = -2.0 * (CFL_dt * dy_N) * I_vrm
-        vh_tot_0(i) = 0.0 ; dvhdv_tot_0(i) = 0.0
+        dv_max_CFL(i) = c2_0 * (CFL_dt * dy_S) * I_vrm
+        dv_min_CFL(i) = c_2_0 * (CFL_dt * dy_N) * I_vrm
+        vh_tot_0(i) = c0_0 ; dvhdv_tot_0(i) = c0_0
       enddo
       do k=1,nz ; do i=ish,ieh
         dvhdv_tot_0(i) = dvhdv_tot_0(i) + dvhdv(i,k)
@@ -1348,22 +1354,22 @@ subroutine meridional_mass_flux(v, h_in, vh, dt, G, GV, US, CS, LB, vhbt, OBC, &
         if (CS%aggress_adjust) then
           do k=1,nz ; do i=ish,ieh
             if (CS%vol_CFL) then
-              dy_S = ratio_max(G%areaT(i,j), G%dx_Cv(I,j), 1000.0*G%dyT(i,j))
-              dy_N = ratio_max(G%areaT(i,j+1), G%dx_Cv(I,j), 1000.0*G%dyT(i,j+1))
+              dy_S = ratio_max(G%areaT(i,j), G%dx_Cv(I,j), c1000_0*G%dyT(i,j))
+              dy_N = ratio_max(G%areaT(i,j+1), G%dx_Cv(I,j), c1000_0*G%dyT(i,j+1))
             else ; dy_S = G%dyT(i,j) ; dy_N = G%dyT(i,j+1) ; endif
-            dv_lim = 0.499*((dy_S*I_dt - v(i,J,k)) + MIN(0.0,v(i,J-1,k)))
+            dv_lim = c0_499*((dy_S*I_dt - v(i,J,k)) + MIN(c0_0,v(i,J-1,k)))
             if (dv_max_CFL(i) * visc_rem(i,k) > dv_lim) &
               dv_max_CFL(i) = dv_lim / visc_rem(i,k)
 
-            dv_lim = 0.499*((-dy_N*CFL_dt - v(i,J,k)) + MAX(0.0,v(i,J+1,k)))
+            dv_lim = c0_499*((-dy_N*CFL_dt - v(i,J,k)) + MAX(c0_0,v(i,J+1,k)))
             if (dv_min_CFL(i) * visc_rem(i,k) < dv_lim) &
               dv_min_CFL(i) = dv_lim / visc_rem(i,k)
           enddo ; enddo
         else
           do k=1,nz ; do i=ish,ieh
             if (CS%vol_CFL) then
-              dy_S = ratio_max(G%areaT(i,j), G%dx_Cv(I,j), 1000.0*G%dyT(i,j))
-              dy_N = ratio_max(G%areaT(i,j+1), G%dx_Cv(I,j), 1000.0*G%dyT(i,j+1))
+              dy_S = ratio_max(G%areaT(i,j), G%dx_Cv(I,j), c1000_0*G%dyT(i,j))
+              dy_N = ratio_max(G%areaT(i,j+1), G%dx_Cv(I,j), c1000_0*G%dyT(i,j+1))
             else ; dy_S = G%dyT(i,j) ; dy_N = G%dyT(i,j+1) ; endif
             if (dv_max_CFL(i) * visc_rem(i,k) > dy_S*CFL_dt - v(i,J,k)) &
               dv_max_CFL(i) = (dy_S*CFL_dt - v(i,J,k)) / visc_rem(i,k)
@@ -1375,19 +1381,19 @@ subroutine meridional_mass_flux(v, h_in, vh, dt, G, GV, US, CS, LB, vhbt, OBC, &
         if (CS%aggress_adjust) then
           do k=1,nz ; do i=ish,ieh
             if (CS%vol_CFL) then
-              dy_S = ratio_max(G%areaT(i,j), G%dx_Cv(I,j), 1000.0*G%dyT(i,j))
-              dy_N = ratio_max(G%areaT(i,j+1), G%dx_Cv(I,j), 1000.0*G%dyT(i,j+1))
+              dy_S = ratio_max(G%areaT(i,j), G%dx_Cv(I,j), c1000_0*G%dyT(i,j))
+              dy_N = ratio_max(G%areaT(i,j+1), G%dx_Cv(I,j), c1000_0*G%dyT(i,j+1))
             else ; dy_S = G%dyT(i,j) ; dy_N = G%dyT(i,j+1) ; endif
-            dv_max_CFL(i) = min(dv_max_CFL(i), 0.499 * &
-                        ((dy_S*I_dt - v(i,J,k)) + MIN(0.0,v(i,J-1,k))) )
-            dv_min_CFL(i) = max(dv_min_CFL(i), 0.499 * &
-                        ((-dy_N*I_dt - v(i,J,k)) + MAX(0.0,v(i,J+1,k))) )
+            dv_max_CFL(i) = min(dv_max_CFL(i), c0_499 * &
+                        ((dy_S*I_dt - v(i,J,k)) + MIN(c0_0,v(i,J-1,k))) )
+            dv_min_CFL(i) = max(dv_min_CFL(i), c0_499 * &
+                        ((-dy_N*I_dt - v(i,J,k)) + MAX(c0_0,v(i,J+1,k))) )
           enddo ; enddo
         else
           do k=1,nz ; do i=ish,ieh
             if (CS%vol_CFL) then
-              dy_S = ratio_max(G%areaT(i,j), G%dx_Cv(I,j), 1000.0*G%dyT(i,j))
-              dy_N = ratio_max(G%areaT(i,j+1), G%dx_Cv(I,j), 1000.0*G%dyT(i,j+1))
+              dy_S = ratio_max(G%areaT(i,j), G%dx_Cv(I,j), c1000_0*G%dyT(i,j))
+              dy_N = ratio_max(G%areaT(i,j+1), G%dx_Cv(I,j), c1000_0*G%dyT(i,j+1))
             else ; dy_S = G%dyT(i,j) ; dy_N = G%dyT(i,j+1) ; endif
             dv_max_CFL(i) = min(dv_max_CFL(i), dy_S*CFL_dt - v(i,J,k))
             dv_min_CFL(i) = max(dv_min_CFL(i), -(dy_N*CFL_dt + v(i,J,k)))
@@ -1395,8 +1401,8 @@ subroutine meridional_mass_flux(v, h_in, vh, dt, G, GV, US, CS, LB, vhbt, OBC, &
         endif
       endif
       do i=ish,ieh
-        dv_max_CFL(i) = max(dv_max_CFL(i),0.0)
-        dv_min_CFL(i) = min(dv_min_CFL(i),0.0)
+        dv_max_CFL(i) = max(dv_max_CFL(i),c0_0)
+        dv_min_CFL(i) = min(dv_min_CFL(i),c0_0)
       enddo
 
       any_simple_OBC = .false.
@@ -1447,7 +1453,7 @@ subroutine meridional_mass_flux(v, h_in, vh, dt, G, GV, US, CS, LB, vhbt, OBC, &
             if (do_I(i)) FAvi(i) = GV%H_subroundoff*G%dx_Cv(i,J)
           enddo
           do k=1,nz ; do i=ish,ieh ; if (do_I(i)) then
-            if ((abs(OBC%segment(OBC%segnum_v(i,J))%normal_vel(i,J,k)) > 0.0) .and. &
+            if ((abs(OBC%segment(OBC%segnum_v(i,J))%normal_vel(i,J,k)) > c0_0) .and. &
                 (OBC%segment(OBC%segnum_v(i,J))%specified)) &
               FAvi(i) = FAvi(i) + OBC%segment(OBC%segnum_v(i,J))%normal_trans(i,J,k) / &
                                   OBC%segment(OBC%segnum_v(i,J))%normal_vel(i,J,k)
@@ -1455,7 +1461,7 @@ subroutine meridional_mass_flux(v, h_in, vh, dt, G, GV, US, CS, LB, vhbt, OBC, &
           do i=ish,ieh ; if (do_I(i)) then
             BT_cont%FA_v_S0(i,J) = FAvi(i) ; BT_cont%FA_v_N0(i,J) = FAvi(i)
             BT_cont%FA_v_SS(i,J) = FAvi(i) ; BT_cont%FA_v_NN(i,J) = FAvi(i)
-            BT_cont%vBT_SS(i,J) = 0.0 ; BT_cont%vBT_NN(i,J) = 0.0
+            BT_cont%vBT_SS(i,J) = c0_0 ; BT_cont%vBT_NN(i,J) = c0_0
           endif ; enddo
         endif
       endif ! set_BT_cont
@@ -1470,19 +1476,19 @@ subroutine meridional_mass_flux(v, h_in, vh, dt, G, GV, US, CS, LB, vhbt, OBC, &
         J = OBC%segment(n)%HI%JsdB
         if (OBC%segment(n)%direction == OBC_DIRECTION_N) then
           do i = OBC%segment(n)%HI%Isd, OBC%segment(n)%HI%Ied
-            FA_v = 0.0
+            FA_v = c0_0
             do k=1,nz ; FA_v = FA_v + h_in(i,j,k)*G%dx_Cv(i,J) ; enddo
             BT_cont%FA_v_S0(i,J) = FA_v ; BT_cont%FA_v_N0(i,J) = FA_v
             BT_cont%FA_v_SS(i,J) = FA_v ; BT_cont%FA_v_NN(i,J) = FA_v
-            BT_cont%vBT_SS(i,J) = 0.0 ; BT_cont%vBT_NN(i,J) = 0.0
+            BT_cont%vBT_SS(i,J) = c0_0 ; BT_cont%vBT_NN(i,J) = c0_0
           enddo
         else
           do i = OBC%segment(n)%HI%Isd, OBC%segment(n)%HI%Ied
-            FA_v = 0.0
+            FA_v = c0_0
             do k=1,nz ; FA_v = FA_v + h_in(i,j+1,k)*G%dx_Cv(i,J) ; enddo
             BT_cont%FA_v_S0(i,J) = FA_v ; BT_cont%FA_v_N0(i,J) = FA_v
             BT_cont%FA_v_SS(i,J) = FA_v ; BT_cont%FA_v_NN(i,J) = FA_v
-            BT_cont%vBT_SS(i,J) = 0.0 ; BT_cont%vBT_NN(i,J) = 0.0
+            BT_cont%vBT_SS(i,J) = c0_0 ; BT_cont%vBT_NN(i,J) = c0_0
           enddo
         endif
       endif
@@ -1552,6 +1558,7 @@ subroutine merid_flux_layer(v, h, h_L, h_R, vh, dvhdv, visc_rem, dt, G, US, J, &
   real :: h_marg ! The marginal thickness of a flux [H ~> m or kg m-2].
   integer :: i
   logical :: local_open_BC
+  real :: c0_0 = 0.0, c0_5 = 0.5, c1_0 = 1.0, c1_5 = 1.5, c2_0 = 2.0, c3_0 = 3.0
 #ifdef GPTL
   integer :: gptl_ret, gptl_handle = 0
 #endif
@@ -1564,25 +1571,25 @@ subroutine merid_flux_layer(v, h, h_L, h_R, vh, dvhdv, visc_rem, dt, G, US, J, &
   endif ; endif
 
   do i=ish,ieh ; if (do_I(i)) then
-    if (v(i) > 0.0) then
+    if (v(i) > c0_0) then
       if (vol_CFL) then ; CFL = (v(i) * dt) * (G%dx_Cv(i,J) * G%IareaT(i,j))
       else ; CFL = v(i) * dt * G%IdyT(i,j) ; endif
-      curv_3 = h_L(i,j) + h_R(i,j) - 2.0*h(i,j)
+      curv_3 = h_L(i,j) + h_R(i,j) - c2_0*h(i,j)
       vh(i) = G%dx_Cv(i,J) * v(i) * ( h_R(i,j) + CFL * &
-          (0.5*(h_L(i,j) - h_R(i,j)) + curv_3*(CFL - 1.5)) )
+          (c0_5*(h_L(i,j) - h_R(i,j)) + curv_3*(CFL - c1_5)) )
       h_marg = h_R(i,j) + CFL * ((h_L(i,j) - h_R(i,j)) + &
-                                  3.0*curv_3*(CFL - 1.0))
-    elseif (v(i) < 0.0) then
+                                  c3_0*curv_3*(CFL - c1_0))
+    elseif (v(i) < c0_0) then
       if (vol_CFL) then ; CFL = (-v(i) * dt) * (G%dx_Cv(i,J) * G%IareaT(i,j+1))
       else ; CFL = -v(i) * dt * G%IdyT(i,j+1) ; endif
-      curv_3 = h_L(i,j+1) + h_R(i,j+1) - 2.0*h(i,j+1)
+      curv_3 = h_L(i,j+1) + h_R(i,j+1) - c2_0*h(i,j+1)
       vh(i) = G%dx_Cv(i,J) * v(i) * ( h_L(i,j+1) + CFL * &
-          (0.5*(h_R(i,j+1)-h_L(i,j+1)) + curv_3*(CFL - 1.5)) )
+          (c0_5*(h_R(i,j+1)-h_L(i,j+1)) + curv_3*(CFL - c1_5)) )
       h_marg = h_L(i,j+1) + CFL * ((h_R(i,j+1)-h_L(i,j+1)) + &
-                                    3.0*curv_3*(CFL - 1.0))
+                                    c3_0*curv_3*(CFL - c1_0))
     else
-      vh(i) = 0.0
-      h_marg = 0.5 * (h_L(i,j+1) + h_R(i,j))
+      vh(i) = c0_0
+      h_marg = c0_5 * (h_L(i,j+1) + h_R(i,j))
     endif
     dvhdv(i) = G%dx_Cv(i,J) * h_marg * visc_rem(i)
   endif ; enddo
@@ -1640,6 +1647,7 @@ subroutine merid_face_thickness(v, h, h_L, h_R, h_v, dt, G, US, LB, vol_CFL, &
   real :: h_marg ! The marginal thickness of a flux [H ~> m or kg m-2].
   logical :: local_open_BC
   integer :: i, j, k, ish, ieh, jsh, jeh, n, nz
+  real :: c0_0 = 0.0, c0_5 = 0.5, c1_0 = 1.0, c1_5 = 1.5, c2_0 = 2.0, c3_0 = 3.0
 #ifdef GPTL
   integer :: gptl_ret, gptl_handle = 0
 #endif
@@ -1650,26 +1658,26 @@ subroutine merid_face_thickness(v, h, h_L, h_R, h_v, dt, G, US, LB, vol_CFL, &
 
   !$OMP parallel do default(shared) private(CFL,curv_3,h_marg,h_avg)
   do k=1,nz ; do J=jsh-1,jeh ; do i=ish,ieh
-    if (v(i,J,k) > 0.0) then
+    if (v(i,J,k) > c0_0) then
       if (vol_CFL) then ; CFL = (v(i,J,k) * dt) * (G%dx_Cv(i,J) * G%IareaT(i,j))
       else ; CFL = v(i,J,k) * dt * G%IdyT(i,j) ; endif
-      curv_3 = h_L(i,j,k) + h_R(i,j,k) - 2.0*h(i,j,k)
-      h_avg = h_R(i,j,k) + CFL * (0.5*(h_L(i,j,k) - h_R(i,j,k)) + curv_3*(CFL - 1.5))
+      curv_3 = h_L(i,j,k) + h_R(i,j,k) - c2_0*h(i,j,k)
+      h_avg = h_R(i,j,k) + CFL * (c0_5*(h_L(i,j,k) - h_R(i,j,k)) + curv_3*(CFL - c1_5))
       h_marg = h_R(i,j,k) + CFL * ((h_L(i,j,k) - h_R(i,j,k)) + &
-                                3.0*curv_3*(CFL - 1.0))
-    elseif (v(i,J,k) < 0.0) then
+                                c3_0*curv_3*(CFL - c1_0))
+    elseif (v(i,J,k) < c0_0) then
       if (vol_CFL) then ; CFL = (-v(i,J,k)*dt) * (G%dx_Cv(i,J) * G%IareaT(i,j+1))
       else ; CFL = -v(i,J,k) * dt * G%IdyT(i,j+1) ; endif
-      curv_3 = h_L(i,j+1,k) + h_R(i,j+1,k) - 2.0*h(i,j+1,k)
-      h_avg = h_L(i,j+1,k) + CFL * (0.5*(h_R(i,j+1,k)-h_L(i,j+1,k)) + curv_3*(CFL - 1.5))
+      curv_3 = h_L(i,j+1,k) + h_R(i,j+1,k) - c2_0*h(i,j+1,k)
+      h_avg = h_L(i,j+1,k) + CFL * (c0_5*(h_R(i,j+1,k)-h_L(i,j+1,k)) + curv_3*(CFL - c1_5))
       h_marg = h_L(i,j+1,k) + CFL * ((h_R(i,j+1,k)-h_L(i,j+1,k)) + &
-                                    3.0*curv_3*(CFL - 1.0))
+                                    c3_0*curv_3*(CFL - c1_0))
     else
-      h_avg = 0.5 * (h_L(i,j+1,k) + h_R(i,j,k))
+      h_avg = c0_5 * (h_L(i,j+1,k) + h_R(i,j,k))
       !   The choice to use the arithmetic mean here is somewhat arbitrariy, but
       ! it should be noted that h_L(i+1,j,k) and h_R(i,j,k) are usually the same.
-      h_marg = 0.5 * (h_L(i,j+1,k) + h_R(i,j,k))
- !    h_marg = (2.0 * h_L(i,j+1,k) * h_R(i,j,k)) / &
+      h_marg = c0_5 * (h_L(i,j+1,k) + h_R(i,j,k))
+ !    h_marg = (c2_0 * h_L(i,j+1,k) * h_R(i,j,k)) / &
  !             (h_L(i,j+1,k) + h_R(i,j,k) + GV%H_subroundoff)
     endif
 
@@ -1781,6 +1789,7 @@ subroutine meridional_flux_adjust(v, h_in, h_L, h_R, vhbt, vh_tot_0, dvhdv_tot_0
   real :: tol_vel ! The tolerance for velocity in the current iteration [L T-1 ~> m s-1].
   integer :: i, k, nz, itt, max_itts = 20
   logical :: full_prec, domore, do_I(SZI_(G))
+  real :: c1e_6 = 1e-6, c1e_15 = 1e-15, c1e_4 = 1e-4, c1e_2 = 1e-2, c0_0 = 0.0, c0_5 = 0.5
 #ifdef GPTL
   integer :: gptl_ret, gptl_handle = 0
 #endif
@@ -1790,14 +1799,14 @@ subroutine meridional_flux_adjust(v, h_in, h_L, h_R, vhbt, vh_tot_0, dvhdv_tot_0
   nz = G%ke
   full_prec = .true. ; if (present(full_precision)) full_prec = full_precision
 
-  vh_aux(:,:) = 0.0 ; dvhdv(:,:) = 0.0
+  vh_aux(:,:) = c0_0 ; dvhdv(:,:) = c0_0
 
   if (present(vh_3d)) then ; do k=1,nz ; do i=ish,ieh
     vh_aux(i,k) = vh_3d(i,J,k)
   enddo ; enddo ; endif
 
   do i=ish,ieh
-    dv(i) = 0.0 ; do_I(i) = do_I_in(i)
+    dv(i) = c0_0 ; do_I(i) = do_I_in(i)
     dv_max(i) = dv_max_CFL(i) ; dv_min(i) = dv_min_CFL(i)
     vh_err(i) = vh_tot_0(i) - vhbt(i) ; dvhdv_tot(i) = dvhdv_tot_0(i)
     vh_err_best(i) = abs(vh_err(i))
@@ -1806,19 +1815,19 @@ subroutine meridional_flux_adjust(v, h_in, h_L, h_R, vhbt, vh_tot_0, dvhdv_tot_0
   do itt=1,max_itts
     if (full_prec) then
       select case (itt)
-        case (:1) ; tol_eta = 1e-6 * CS%tol_eta
-        case (2)  ; tol_eta = 1e-4 * CS%tol_eta
-        case (3)  ; tol_eta = 1e-2 * CS%tol_eta
+        case (:1) ; tol_eta = c1e_6 * CS%tol_eta
+        case (2)  ; tol_eta = c1e_4 * CS%tol_eta
+        case (3)  ; tol_eta = c1e_2 * CS%tol_eta
         case default ; tol_eta = CS%tol_eta
       end select
     else
-      tol_eta = CS%tol_eta_aux ; if (itt<=1) tol_eta = 1e-6 * CS%tol_eta_aux
+      tol_eta = CS%tol_eta_aux ; if (itt<=1) tol_eta = c1e_6 * CS%tol_eta_aux
     endif
     tol_vel = CS%tol_vel
 
     do i=ish,ieh
-      if (vh_err(i) > 0.0) then ; dv_max(i) = dv(i)
-      elseif (vh_err(i) < 0.0) then ; dv_min(i) = dv(i)
+      if (vh_err(i) > c0_0) then ; dv_max(i) = dv(i)
+      elseif (vh_err(i) < c0_0) then ; dv_min(i) = dv(i)
       else ; do_I(i) = .false. ; endif
     enddo
     domore = .false.
@@ -1832,24 +1841,24 @@ subroutine meridional_flux_adjust(v, h_in, h_L, h_R, vhbt, vh_tot_0, dvhdv_tot_0
           ddv = -vh_err(i) / dvhdv_tot(i)
           dv_prev = dv(i)
           dv(i) = dv(i) + ddv
-          if (abs(ddv) < 1.0e-15*abs(dv(i))) then
+          if (abs(ddv) < c1e_15*abs(dv(i))) then
             do_I(i) = .false. ! ddv is small enough to quit.
-          elseif (ddv > 0.0) then
+          elseif (ddv > c0_0) then
             if (dv(i) >= dv_max(i)) then
-              dv(i) = 0.5*(dv_prev + dv_max(i))
-              if (dv_max(i) - dv_prev < 1.0e-15*abs(dv(i))) do_I(i) = .false.
+              dv(i) = c0_5*(dv_prev + dv_max(i))
+              if (dv_max(i) - dv_prev < c1e_15*abs(dv(i))) do_I(i) = .false.
             endif
-          else ! dvv(i) < 0.0
+          else ! dvv(i) < c0_0
             if (dv(i) <= dv_min(i)) then
-              dv(i) = 0.5*(dv_prev + dv_min(i))
-              if (dv_prev - dv_min(i) < 1.0e-15*abs(dv(i))) do_I(i) = .false.
+              dv(i) = c0_5*(dv_prev + dv_min(i))
+              if (dv_prev - dv_min(i) < c1e_15*abs(dv(i))) do_I(i) = .false.
             endif
           endif
         else
           !   Use Newton's method, provided it stays bounded, just like above.
           dv(i) = dv(i) - vh_err(i) / dvhdv_tot(i)
           if ((dv(i) >= dv_max(i)) .or. (dv(i) <= dv_min(i))) &
-            dv(i) = 0.5*(dv_max(i) + dv_min(i))
+            dv(i) = c0_5*(dv_max(i) + dv_min(i))
         endif
         if (do_I(i)) domore = .true.
       else
@@ -1873,7 +1882,7 @@ subroutine meridional_flux_adjust(v, h_in, h_L, h_R, vhbt, vh_tot_0, dvhdv_tot_0
 
     if (itt < max_itts) then
       do i=ish,ieh
-        vh_err(i) = -vhbt(i) ; dvhdv_tot(i) = 0.0
+        vh_err(i) = -vhbt(i) ; dvhdv_tot(i) = c0_0
       enddo
       do k=1,nz ; do i=ish,ieh
         vh_err(i) = vh_err(i) + vh_aux(i,k)
@@ -1966,17 +1975,18 @@ subroutine set_merid_BT_cont(v, h_in, h_L, h_R, BT_cont, vh_tot_0, dvhdv_tot_0, 
   real :: Idt     ! The inverse of the time step [T-1 ~> s-1].
   logical :: domore
   integer :: i, k, nz
+  real :: c1_0 = 1.0, c0_1 = 0.1, c1e_6 = 1e-6, c0_0 = 0.0, c1e_12 = 1e-12, c1_5 = 1.5
 #ifdef GPTL
   integer :: gptl_ret, gptl_handle = 0
 #endif
 #ifdef GPTL
     gptl_ret = gptlstart_handle("::MOM_continuity_PPM::set_merid_BT_cont", gptl_handle)
 #endif
-  nz = G%ke ; Idt = 1.0 / dt
-  min_visc_rem = 0.1 ; CFL_min = 1e-6
+  nz = G%ke ; Idt = c1_0 / dt
+  min_visc_rem = c0_1 ; CFL_min = c1e_6
 
  ! Diagnose the zero-transport correction, dv0.
-  do i=ish,ieh ; zeros(i) = 0.0 ; enddo
+  do i=ish,ieh ; zeros(i) = c0_0 ; enddo
 #ifdef GPTL
     gptl_ret = gptlstop_handle("::MOM_continuity_PPM::set_merid_BT_cont", gptl_handle)
 #endif
@@ -1993,18 +2003,18 @@ subroutine set_merid_BT_cont(v, h_in, h_L, h_R, BT_cont, vh_tot_0, dvhdv_tot_0, 
   do i=ish,ieh ; if (do_I(i)) then
     domore = .true.
     dv_CFL(i) = (CFL_min * Idt) * G%dyCv(i,J)
-    dvR(i) = min(0.0,dv0(i) - dv_CFL(i))
-    dvL(i) = max(0.0,dv0(i) + dv_CFL(i))
-    FAmt_L(i) = 0.0 ; FAmt_R(i) = 0.0 ; FAmt_0(i) = 0.0
-    vhtot_L(i) = 0.0 ; vhtot_R(i) = 0.0
+    dvR(i) = min(c0_0,dv0(i) - dv_CFL(i))
+    dvL(i) = max(c0_0,dv0(i) + dv_CFL(i))
+    FAmt_L(i) = c0_0 ; FAmt_R(i) = c0_0 ; FAmt_0(i) = c0_0
+    vhtot_L(i) = c0_0 ; vhtot_R(i) = c0_0
   endif ; enddo
 
   if (.not.domore) then
     do k=1,nz ; do i=ish,ieh
-      BT_cont%FA_v_S0(i,J) = 0.0 ; BT_cont%FA_v_SS(i,J) = 0.0
-      BT_cont%vBT_SS(i,J) = 0.0
-      BT_cont%FA_v_N0(i,J) = 0.0 ; BT_cont%FA_v_NN(i,J) = 0.0
-      BT_cont%vBT_NN(i,J) = 0.0
+      BT_cont%FA_v_S0(i,J) = c0_0 ; BT_cont%FA_v_SS(i,J) = c0_0
+      BT_cont%vBT_SS(i,J) = c0_0
+      BT_cont%FA_v_N0(i,J) = c0_0 ; BT_cont%FA_v_NN(i,J) = c0_0
+      BT_cont%vBT_NN(i,J) = c0_0
     enddo ; enddo
 #ifdef GPTL
     gptl_ret = gptlstop_handle("::MOM_continuity_PPM::set_merid_BT_cont", gptl_handle)
@@ -2014,7 +2024,7 @@ subroutine set_merid_BT_cont(v, h_in, h_L, h_R, BT_cont, vh_tot_0, dvhdv_tot_0, 
 
   do k=1,nz ; do i=ish,ieh ; if (do_I(i)) then
     visc_rem_lim = max(visc_rem(i,k), min_visc_rem*visc_rem_max(i))
-    if (visc_rem_lim > 0.0) then ! This is almost always true for ocean points.
+    if (visc_rem_lim > c0_0) then ! This is almost always true for ocean points.
       if (v(i,J,k) + dvR(i)*visc_rem_lim > -dv_CFL(i)*visc_rem(i,k)) &
         dvR(i) = -(v(i,J,k) + dv_CFL(i)*visc_rem(i,k)) / visc_rem_lim
       if (v(i,J,k) + dvL(i)*visc_rem_lim < dv_CFL(i)*visc_rem(i,k)) &
@@ -2049,7 +2059,7 @@ subroutine set_merid_BT_cont(v, h_in, h_L, h_R, BT_cont, vh_tot_0, dvhdv_tot_0, 
   enddo
   do i=ish,ieh ; if (do_I(i)) then
     FA_0 = FAmt_0(i) ; FA_avg = FAmt_0(i)
-    if ((dvL(i) - dv0(i)) /= 0.0) &
+    if ((dvL(i) - dv0(i)) /= c0_0) &
       FA_avg = vhtot_L(i) / (dvL(i) - dv0(i))
     if (FA_avg > max(FA_0, FAmt_L(i))) then
       FA_avg = max(FA_0, FAmt_L(i))
@@ -2057,15 +2067,15 @@ subroutine set_merid_BT_cont(v, h_in, h_L, h_R, BT_cont, vh_tot_0, dvhdv_tot_0, 
       FA_0 = FA_avg
     endif
     BT_cont%FA_v_S0(i,J) = FA_0 ; BT_cont%FA_v_SS(i,J) = FAmt_L(i)
-    if (abs(FA_0-FAmt_L(i)) <= 1e-12*FA_0) then
-      BT_cont%vBT_SS(i,J) = 0.0
+    if (abs(FA_0-FAmt_L(i)) <= c1e_12*FA_0) then
+      BT_cont%vBT_SS(i,J) = c0_0
     else
-      BT_cont%vBT_SS(i,J) = (1.5 * (dvL(i) - dv0(i))) * &
+      BT_cont%vBT_SS(i,J) = (c1_5 * (dvL(i) - dv0(i))) * &
                    ((FAmt_L(i) - FA_avg) / (FAmt_L(i) - FA_0))
     endif
 
     FA_0 = FAmt_0(i) ; FA_avg = FAmt_0(i)
-    if ((dvR(i) - dv0(i)) /= 0.0) &
+    if ((dvR(i) - dv0(i)) /= c0_0) &
       FA_avg = vhtot_R(i) / (dvR(i) - dv0(i))
     if (FA_avg > max(FA_0, FAmt_R(i))) then
       FA_avg = max(FA_0, FAmt_R(i))
@@ -2074,15 +2084,15 @@ subroutine set_merid_BT_cont(v, h_in, h_L, h_R, BT_cont, vh_tot_0, dvhdv_tot_0, 
     endif
     BT_cont%FA_v_N0(i,J) = FA_0 ; BT_cont%FA_v_NN(i,J) = FAmt_R(i)
     if (abs(FAmt_R(i) - FA_0) <= 1e-12*FA_0) then
-      BT_cont%vBT_NN(i,J) = 0.0
+      BT_cont%vBT_NN(i,J) = c0_0
     else
-      BT_cont%vBT_NN(i,J) = (1.5 * (dvR(i) - dv0(i))) * &
+      BT_cont%vBT_NN(i,J) = (c1_5 * (dvR(i) - dv0(i))) * &
                    ((FAmt_R(i) - FA_avg) / (FAmt_R(i) - FA_0))
     endif
   else
-    BT_cont%FA_v_S0(i,J) = 0.0 ; BT_cont%FA_v_SS(i,J) = 0.0
-    BT_cont%FA_v_N0(i,J) = 0.0 ; BT_cont%FA_v_NN(i,J) = 0.0
-    BT_cont%vBT_SS(i,J) = 0.0 ; BT_cont%vBT_NN(i,J) = 0.0
+    BT_cont%FA_v_S0(i,J) = c0_0 ; BT_cont%FA_v_SS(i,J) = c0_0
+    BT_cont%FA_v_N0(i,J) = c0_0 ; BT_cont%FA_v_NN(i,J) = c0_0
+    BT_cont%vBT_SS(i,J) = c0_0 ; BT_cont%vBT_NN(i,J) = c0_0
   endif ; enddo
 #ifdef GPTL
     gptl_ret = gptlstop_handle("::MOM_continuity_PPM::set_merid_BT_cont", gptl_handle)
@@ -2118,6 +2128,7 @@ subroutine PPM_reconstruction_x(h_in, h_L, h_R, G, LB, h_min, monotonic, simple_
   integer :: i, j, isl, iel, jsl, jel, n, stencil
   logical :: local_open_BC
   type(OBC_segment_type), pointer :: segment => NULL()
+  real :: c1_0 = 1.0, c0_0 = 0.0, c0_5 = 0.5, c2_0 = 2.0
 #ifdef GPTL
   integer :: gptl_ret, gptl_handle = 0
 #endif
@@ -2152,22 +2163,22 @@ subroutine PPM_reconstruction_x(h_in, h_L, h_R, G, LB, h_min, monotonic, simple_
 
   if (use_2nd) then
     do j=jsl,jel ; do i=isl,iel
-      h_im1 = G%mask2dT(i-1,j) * h_in(i-1,j) + (1.0-G%mask2dT(i-1,j)) * h_in(i,j)
-      h_ip1 = G%mask2dT(i+1,j) * h_in(i+1,j) + (1.0-G%mask2dT(i+1,j)) * h_in(i,j)
-      h_L(i,j) = 0.5*( h_im1 + h_in(i,j) )
-      h_R(i,j) = 0.5*( h_ip1 + h_in(i,j) )
+      h_im1 = G%mask2dT(i-1,j) * h_in(i-1,j) + (c1_0-G%mask2dT(i-1,j)) * h_in(i,j)
+      h_ip1 = G%mask2dT(i+1,j) * h_in(i+1,j) + (c1_0-G%mask2dT(i+1,j)) * h_in(i,j)
+      h_L(i,j) = c0_5*( h_im1 + h_in(i,j) )
+      h_R(i,j) = c0_5*( h_ip1 + h_in(i,j) )
     enddo ; enddo
   else
     do j=jsl,jel ; do i=isl-1,iel+1
-      if ((G%mask2dT(i-1,j) * G%mask2dT(i,j) * G%mask2dT(i+1,j)) == 0.0) then
-        slp(i,j) = 0.0
+      if ((G%mask2dT(i-1,j) * G%mask2dT(i,j) * G%mask2dT(i+1,j)) == c0_0) then
+        slp(i,j) = c0_0
       else
         ! This uses a simple 2nd order slope.
-        slp(i,j) = 0.5 * (h_in(i+1,j) - h_in(i-1,j))
+        slp(i,j) = c0_5 * (h_in(i+1,j) - h_in(i-1,j))
         ! Monotonic constraint, see Eq. B2 in Lin 1994, MWR (132)
         dMx = max(h_in(i+1,j), h_in(i-1,j), h_in(i,j)) - h_in(i,j)
         dMn = h_in(i,j) - min(h_in(i+1,j), h_in(i-1,j), h_in(i,j))
-        slp(i,j) = sign(1.,slp(i,j)) * min(abs(slp(i,j)), 2. * min(dMx, dMn))
+        slp(i,j) = sign(1.,slp(i,j)) * min(abs(slp(i,j)), c2_0 * min(dMx, dMn))
                 ! * (G%mask2dT(i-1,j) * G%mask2dT(i,j) * G%mask2dT(i+1,j))
       endif
     enddo ; enddo
@@ -2180,8 +2191,8 @@ subroutine PPM_reconstruction_x(h_in, h_L, h_R, G, LB, h_min, monotonic, simple_
             segment%direction == OBC_DIRECTION_W) then
           I=segment%HI%IsdB
           do j=segment%HI%jsd,segment%HI%jed
-            slp(i+1,j) = 0.0
-            slp(i,j) = 0.0
+            slp(i+1,j) = c0_0
+            slp(i,j) = c0_0
           enddo
         endif
       enddo
@@ -2190,13 +2201,13 @@ subroutine PPM_reconstruction_x(h_in, h_L, h_R, G, LB, h_min, monotonic, simple_
     do j=jsl,jel ; do i=isl,iel
       ! Neighboring values should take into account any boundaries.  The 3
       ! following sets of expressions are equivalent.
-    ! h_im1 = h_in(i-1,j,k) ; if (G%mask2dT(i-1,j) < 0.5) h_im1 = h_in(i,j)
-    ! h_ip1 = h_in(i+1,j,k) ; if (G%mask2dT(i+1,j) < 0.5) h_ip1 = h_in(i,j)
-      h_im1 = G%mask2dT(i-1,j) * h_in(i-1,j) + (1.0-G%mask2dT(i-1,j)) * h_in(i,j)
-      h_ip1 = G%mask2dT(i+1,j) * h_in(i+1,j) + (1.0-G%mask2dT(i+1,j)) * h_in(i,j)
+    ! h_im1 = h_in(i-1,j,k) ; if (G%mask2dT(i-1,j) < c0_5) h_im1 = h_in(i,j)
+    ! h_ip1 = h_in(i+1,j,k) ; if (G%mask2dT(i+1,j) < c0_5) h_ip1 = h_in(i,j)
+      h_im1 = G%mask2dT(i-1,j) * h_in(i-1,j) + (c1_0-G%mask2dT(i-1,j)) * h_in(i,j)
+      h_ip1 = G%mask2dT(i+1,j) * h_in(i+1,j) + (c1_0-G%mask2dT(i+1,j)) * h_in(i,j)
       ! Left/right values following Eq. B2 in Lin 1994, MWR (132)
-      h_L(i,j) = 0.5*( h_im1 + h_in(i,j) ) + oneSixth*( slp(i-1,j) - slp(i,j) )
-      h_R(i,j) = 0.5*( h_ip1 + h_in(i,j) ) + oneSixth*( slp(i,j) - slp(i+1,j) )
+      h_L(i,j) = c0_5*( h_im1 + h_in(i,j) ) + oneSixth*( slp(i-1,j) - slp(i,j) )
+      h_R(i,j) = c0_5*( h_ip1 + h_in(i,j) ) + oneSixth*( slp(i,j) - slp(i+1,j) )
     enddo ; enddo
   endif
 
@@ -2265,6 +2276,7 @@ subroutine PPM_reconstruction_y(h_in, h_L, h_R, G, LB, h_min, monotonic, simple_
   integer :: i, j, isl, iel, jsl, jel, n, stencil
   logical :: local_open_BC
   type(OBC_segment_type), pointer :: segment => NULL()
+  real :: c1_0 = 1.0, c0_0 = 0.0, c0_5 = 0.5, c2_0 = 2.0
 #ifdef GPTL
   integer :: gptl_ret, gptl_handle = 0
 #endif
@@ -2299,22 +2311,22 @@ subroutine PPM_reconstruction_y(h_in, h_L, h_R, G, LB, h_min, monotonic, simple_
 
   if (use_2nd) then
     do j=jsl,jel ; do i=isl,iel
-      h_jm1 = G%mask2dT(i,j-1) * h_in(i,j-1) + (1.0-G%mask2dT(i,j-1)) * h_in(i,j)
-      h_jp1 = G%mask2dT(i,j+1) * h_in(i,j+1) + (1.0-G%mask2dT(i,j+1)) * h_in(i,j)
-      h_L(i,j) = 0.5*( h_jm1 + h_in(i,j) )
-      h_R(i,j) = 0.5*( h_jp1 + h_in(i,j) )
+      h_jm1 = G%mask2dT(i,j-1) * h_in(i,j-1) + (c1_0-G%mask2dT(i,j-1)) * h_in(i,j)
+      h_jp1 = G%mask2dT(i,j+1) * h_in(i,j+1) + (c1_0-G%mask2dT(i,j+1)) * h_in(i,j)
+      h_L(i,j) = c0_5*( h_jm1 + h_in(i,j) )
+      h_R(i,j) = c0_5*( h_jp1 + h_in(i,j) )
     enddo ; enddo
   else
     do j=jsl-1,jel+1 ; do i=isl,iel
-      if ((G%mask2dT(i,j-1) * G%mask2dT(i,j) * G%mask2dT(i,j+1)) == 0.0) then
-        slp(i,j) = 0.0
+      if ((G%mask2dT(i,j-1) * G%mask2dT(i,j) * G%mask2dT(i,j+1)) == c0_0) then
+        slp(i,j) = c0_0
       else
         ! This uses a simple 2nd order slope.
-        slp(i,j) = 0.5 * (h_in(i,j+1) - h_in(i,j-1))
+        slp(i,j) = c0_5 * (h_in(i,j+1) - h_in(i,j-1))
         ! Monotonic constraint, see Eq. B2 in Lin 1994, MWR (132)
         dMx = max(h_in(i,j+1), h_in(i,j-1), h_in(i,j)) - h_in(i,j)
         dMn = h_in(i,j) - min(h_in(i,j+1), h_in(i,j-1), h_in(i,j))
-        slp(i,j) = sign(1.,slp(i,j)) * min(abs(slp(i,j)), 2. * min(dMx, dMn))
+        slp(i,j) = sign(1.,slp(i,j)) * min(abs(slp(i,j)), c2_0 * min(dMx, dMn))
                 ! * (G%mask2dT(i,j-1) * G%mask2dT(i,j) * G%mask2dT(i,j+1))
       endif
     enddo ; enddo
@@ -2327,8 +2339,8 @@ subroutine PPM_reconstruction_y(h_in, h_L, h_R, G, LB, h_min, monotonic, simple_
             segment%direction == OBC_DIRECTION_N) then
           J=segment%HI%JsdB
           do i=segment%HI%isd,segment%HI%ied
-            slp(i,j+1) = 0.0
-            slp(i,j) = 0.0
+            slp(i,j+1) = c0_0
+            slp(i,j) = c0_0
           enddo
         endif
       enddo
@@ -2337,11 +2349,11 @@ subroutine PPM_reconstruction_y(h_in, h_L, h_R, G, LB, h_min, monotonic, simple_
     do j=jsl,jel ; do i=isl,iel
       ! Neighboring values should take into account any boundaries.  The 3
       ! following sets of expressions are equivalent.
-      h_jm1 = G%mask2dT(i,j-1) * h_in(i,j-1) + (1.0-G%mask2dT(i,j-1)) * h_in(i,j)
-      h_jp1 = G%mask2dT(i,j+1) * h_in(i,j+1) + (1.0-G%mask2dT(i,j+1)) * h_in(i,j)
+      h_jm1 = G%mask2dT(i,j-1) * h_in(i,j-1) + (c1_0-G%mask2dT(i,j-1)) * h_in(i,j)
+      h_jp1 = G%mask2dT(i,j+1) * h_in(i,j+1) + (c1_0-G%mask2dT(i,j+1)) * h_in(i,j)
       ! Left/right values following Eq. B2 in Lin 1994, MWR (132)
-      h_L(i,j) = 0.5*( h_jm1 + h_in(i,j) ) + oneSixth*( slp(i,j-1) - slp(i,j) )
-      h_R(i,j) = 0.5*( h_jp1 + h_in(i,j) ) + oneSixth*( slp(i,j) - slp(i,j+1) )
+      h_L(i,j) = c0_5*( h_jm1 + h_in(i,j) ) + oneSixth*( slp(i,j-1) - slp(i,j) )
+      h_R(i,j) = c0_5*( h_jp1 + h_in(i,j) ) + oneSixth*( slp(i,j) - slp(i,j+1) )
     enddo ; enddo
   endif
 
@@ -2401,6 +2413,7 @@ subroutine PPM_limit_pos(h_in, h_L, h_R, h_min, G, iis, iie, jis, jie)
   real    :: curv, dh, scale
   character(len=256) :: mesg
   integer :: i,j
+  real :: c3_0 = 3.0, c2_0 = 2.0, c12_0 = 12.0, c0_0 = 0.0
 #ifdef GPTL
   integer :: gptl_ret, gptl_handle = 0
 #endif
@@ -2410,16 +2423,16 @@ subroutine PPM_limit_pos(h_in, h_L, h_R, h_min, G, iis, iie, jis, jie)
   do j=jis,jie ; do i=iis,iie
     ! This limiter prevents undershooting minima within the domain with
     ! values less than h_min.
-    curv = 3.0*(h_L(i,j) + h_R(i,j) - 2.0*h_in(i,j))
-    if (curv > 0.0) then ! Only minima are limited.
+    curv = c3_0*(h_L(i,j) + h_R(i,j) - c2_0*h_in(i,j))
+    if (curv > c0_0) then ! Only minima are limited.
       dh = h_R(i,j) - h_L(i,j)
       if (abs(dh) < curv) then ! The parabola's minimum is within the cell.
         if (h_in(i,j) <= h_min) then
           h_L(i,j) = h_in(i,j) ; h_R(i,j) = h_in(i,j)
-        elseif (12.0*curv*(h_in(i,j) - h_min) < (curv**2 + 3.0*dh**2)) then
+        elseif (c12_0*curv*(h_in(i,j) - h_min) < (curv**2 + c3_0*dh**2)) then
           ! The minimum value is h_in - (curv^2 + 3*dh^2)/(12*curv), and must
           ! be limited in this case.  0 < scale < 1.
-          scale = 12.0*curv*(h_in(i,j) - h_min) / (curv**2 + 3.0*dh**2)
+          scale = c12_0*curv*(h_in(i,j) - h_min) / (curv**2 + c3_0*dh**2)
           h_L(i,j) = h_in(i,j) + scale*(h_L(i,j) - h_in(i,j))
           h_R(i,j) = h_in(i,j) + scale*(h_R(i,j) - h_in(i,j))
         endif
@@ -2449,6 +2462,7 @@ subroutine PPM_limit_CW84(h_in, h_L, h_R, G, iis, iie, jis, jie)
   real    :: h_i, RLdiff, RLdiff2, RLmean, FunFac
   character(len=256) :: mesg
   integer :: i,j
+  real :: c0_0 = 0.0, c0_5 = 0.5, c6_0 = 6.0, c2_0 = 2.0, c3_0 = 3.0
 #ifdef GPTL
   integer :: gptl_ret, gptl_handle = 0
 #endif
@@ -2459,15 +2473,15 @@ subroutine PPM_limit_CW84(h_in, h_L, h_R, G, iis, iie, jis, jie)
     ! This limiter monotonizes the parabola following
     ! Colella and Woodward, 1984, Eq. 1.10
     h_i = h_in(i,j)
-    if ( ( h_R(i,j) - h_i ) * ( h_i - h_L(i,j) ) <= 0. ) then
+    if ( ( h_R(i,j) - h_i ) * ( h_i - h_L(i,j) ) <= c0_0 ) then
       h_L(i,j) = h_i ; h_R(i,j) = h_i
     else
       RLdiff = h_R(i,j) - h_L(i,j)            ! Difference of edge values
-      RLmean = 0.5 * ( h_R(i,j) + h_L(i,j) )  ! Mean of edge values
-      FunFac = 6. * RLdiff * ( h_i - RLmean ) ! Some funny factor
+      RLmean = c0_5 * ( h_R(i,j) + h_L(i,j) )  ! Mean of edge values
+      FunFac = c6_0 * RLdiff * ( h_i - RLmean ) ! Some funny factor
       RLdiff2 = RLdiff * RLdiff               ! Square of difference
-      if ( FunFac >  RLdiff2 ) h_L(i,j) = 3. * h_i - 2. * h_R(i,j)
-      if ( FunFac < -RLdiff2 ) h_R(i,j) = 3. * h_i - 2. * h_L(i,j)
+      if ( FunFac >  RLdiff2 ) h_L(i,j) = c3_0 * h_i - c2_0 * h_R(i,j)
+      if ( FunFac < -RLdiff2 ) h_R(i,j) = c3_0 * h_i - c2_0 * h_L(i,j)
     endif
   enddo ; enddo
 #ifdef GPTL
