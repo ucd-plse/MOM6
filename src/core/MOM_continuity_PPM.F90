@@ -309,7 +309,7 @@ subroutine zonal_mass_flux(u, h_in, uh, dt, G, GV, US, CS, LB, uhbt, OBC, &
   logical :: local_specified_BC, use_visc_rem, set_BT_cont, any_simple_OBC
   logical :: local_Flather_OBC, local_open_BC, is_simple
   type(OBC_segment_type), pointer :: segment => NULL()
-  real :: c1_0 = 1.0, c2_0 = 2.0, c_2_0 = -2.0, c0_0 = 0.0, c1000_0 = 1000.0, c0_499 = 0.499
+  real, parameter :: c1_0 = 1.0, c2_0 = 2.0, c_2_0 = -2.0, c0_0 = 0.0, c1000_0 = 1000.0, c0_499 = 0.499
 #ifdef GPTL
   integer :: gptl_ret, gptl_handle = 0
 #endif
@@ -621,7 +621,7 @@ subroutine zonal_flux_layer(u, h, h_L, h_R, uh, duhdu, visc_rem, dt, G, US, j, &
   real :: h_marg ! The marginal thickness of a flux [H ~> m or kg m-2].
   integer :: i
   logical :: local_open_BC
-  real :: c0_0 = 0.0, c1_0 = 1.0, c2_0 = 2.0, c0_5 = 0.5, c3_0 = 3.0, c1_5 = 1.5
+  real, parameter :: c0_0 = 0.0, c1_0 = 1.0, c2_0 = 2.0, c0_5 = 0.5, c3_0 = 3.0, c1_5 = 1.5
 #ifdef GPTL
   integer :: gptl_ret, gptl_handle = 0
 #endif
@@ -709,7 +709,7 @@ subroutine zonal_face_thickness(u, h, h_L, h_R, h_u, dt, G, US, LB, vol_CFL, &
   real :: h_marg ! The marginal thickness of a flux [H ~> m or kg m-2].
   logical :: local_open_BC
   integer :: i, j, k, ish, ieh, jsh, jeh, nz, n
-  real :: c0_0 = 0.0, c0_5 = 0.5, c2_0 = 2.0, c3_0 = 3.0, c1_5 = 1.5, c1_0 = 1.0
+  real, parameter :: c0_0 = 0.0, c0_5 = 0.5, c2_0 = 2.0, c3_0 = 3.0, c1_5 = 1.5, c1_0 = 1.0
 #ifdef GPTL
   integer :: gptl_ret, gptl_handle = 0
 #endif
@@ -870,7 +870,7 @@ subroutine zonal_flux_adjust(u, h_in, h_L, h_R, uhbt, uh_tot_0, duhdu_tot_0, &
   real :: tol_vel ! The tolerance for velocity in the current iteration [L T-1 ~> m s-1].
   integer :: i, k, nz, itt, max_itts = 20
   logical :: full_prec, domore, do_I(SZIB_(G))
-  real :: c1e_6 = 1e-6, c1e_15 = 1e-15, c1e_4 = 1e-4, c1e_2 = 1e-2, c0_0 = 0.0, c0_5 = 0.5
+  real, parameter :: c1e_6 = 1e-6, c1e_15 = 1e-15, c1e_4 = 1e-4, c1e_2 = 1e-2, c0_0 = 0.0, c0_5 = 0.5
 #ifdef GPTL
   integer :: gptl_ret, gptl_handle = 0
 #endif
@@ -1067,7 +1067,7 @@ subroutine set_zonal_BT_cont(u, h_in, h_L, h_R, BT_cont, uh_tot_0, duhdu_tot_0, 
   real :: Idt     ! The inverse of the time step [T-1 ~> s-1].
   logical :: domore
   integer :: i, k, nz
-  real :: c0_1 = 0.1, c1_0 = 1.0, c1e_6 = 1e-6, c0_0 = 0.0, c1e_12 = 1e-12, c1_5 = 1.5 
+  real, parameter :: c0_1 = 0.1, c1_0 = 1.0, c1e_6 = 1e-6, c0_0 = 0.0, c1e_12 = 1e-12, c1_5 = 1.5 
 #ifdef GPTL
   integer :: gptl_ret, gptl_handle = 0
 #endif
@@ -1251,7 +1251,7 @@ subroutine meridional_mass_flux(v, h_in, vh, dt, G, GV, US, CS, LB, vhbt, OBC, &
   logical :: local_specified_BC, use_visc_rem, set_BT_cont, any_simple_OBC
   logical :: local_Flather_OBC, is_simple, local_open_BC
   type(OBC_segment_type), pointer :: segment => NULL()
-  real :: c1_0 = 1.0, c2_0 = 2.0, c_2_0 = -2.0, c0_0 = 0.0, c1000_0 = 1000.0, c0_499 = 0.499
+  real, parameter :: c1_0 = 1.0, c2_0 = 2.0, c_2_0 = -2.0, c0_0 = 0.0, c1000_0 = 1000.0, c0_499 = 0.499
 #ifdef GPTL
   integer :: gptl_ret, gptl_handle = 0
 #endif
@@ -1558,7 +1558,7 @@ subroutine merid_flux_layer(v, h, h_L, h_R, vh, dvhdv, visc_rem, dt, G, US, J, &
   real :: h_marg ! The marginal thickness of a flux [H ~> m or kg m-2].
   integer :: i
   logical :: local_open_BC
-  real :: c0_0 = 0.0, c0_5 = 0.5, c1_0 = 1.0, c1_5 = 1.5, c2_0 = 2.0, c3_0 = 3.0
+  real, parameter :: c0_0 = 0.0, c0_5 = 0.5, c1_0 = 1.0, c1_5 = 1.5, c2_0 = 2.0, c3_0 = 3.0
 #ifdef GPTL
   integer :: gptl_ret, gptl_handle = 0
 #endif
@@ -1647,7 +1647,7 @@ subroutine merid_face_thickness(v, h, h_L, h_R, h_v, dt, G, US, LB, vol_CFL, &
   real :: h_marg ! The marginal thickness of a flux [H ~> m or kg m-2].
   logical :: local_open_BC
   integer :: i, j, k, ish, ieh, jsh, jeh, n, nz
-  real :: c0_0 = 0.0, c0_5 = 0.5, c1_0 = 1.0, c1_5 = 1.5, c2_0 = 2.0, c3_0 = 3.0
+  real, parameter :: c0_0 = 0.0, c0_5 = 0.5, c1_0 = 1.0, c1_5 = 1.5, c2_0 = 2.0, c3_0 = 3.0
 #ifdef GPTL
   integer :: gptl_ret, gptl_handle = 0
 #endif
@@ -1789,7 +1789,7 @@ subroutine meridional_flux_adjust(v, h_in, h_L, h_R, vhbt, vh_tot_0, dvhdv_tot_0
   real :: tol_vel ! The tolerance for velocity in the current iteration [L T-1 ~> m s-1].
   integer :: i, k, nz, itt, max_itts = 20
   logical :: full_prec, domore, do_I(SZI_(G))
-  real :: c1e_6 = 1e-6, c1e_15 = 1e-15, c1e_4 = 1e-4, c1e_2 = 1e-2, c0_0 = 0.0, c0_5 = 0.5
+  real, parameter :: c1e_6 = 1e-6, c1e_15 = 1e-15, c1e_4 = 1e-4, c1e_2 = 1e-2, c0_0 = 0.0, c0_5 = 0.5
 #ifdef GPTL
   integer :: gptl_ret, gptl_handle = 0
 #endif
@@ -1975,7 +1975,7 @@ subroutine set_merid_BT_cont(v, h_in, h_L, h_R, BT_cont, vh_tot_0, dvhdv_tot_0, 
   real :: Idt     ! The inverse of the time step [T-1 ~> s-1].
   logical :: domore
   integer :: i, k, nz
-  real :: c1_0 = 1.0, c0_1 = 0.1, c1e_6 = 1e-6, c0_0 = 0.0, c1e_12 = 1e-12, c1_5 = 1.5
+  real, parameter :: c1_0 = 1.0, c0_1 = 0.1, c1e_6 = 1e-6, c0_0 = 0.0, c1e_12 = 1e-12, c1_5 = 1.5
 #ifdef GPTL
   integer :: gptl_ret, gptl_handle = 0
 #endif
@@ -2128,7 +2128,7 @@ subroutine PPM_reconstruction_x(h_in, h_L, h_R, G, LB, h_min, monotonic, simple_
   integer :: i, j, isl, iel, jsl, jel, n, stencil
   logical :: local_open_BC
   type(OBC_segment_type), pointer :: segment => NULL()
-  real :: c1_0 = 1.0, c0_0 = 0.0, c0_5 = 0.5, c2_0 = 2.0
+  real, parameter :: c1_0 = 1.0, c0_0 = 0.0, c0_5 = 0.5, c2_0 = 2.0
 #ifdef GPTL
   integer :: gptl_ret, gptl_handle = 0
 #endif
@@ -2276,7 +2276,7 @@ subroutine PPM_reconstruction_y(h_in, h_L, h_R, G, LB, h_min, monotonic, simple_
   integer :: i, j, isl, iel, jsl, jel, n, stencil
   logical :: local_open_BC
   type(OBC_segment_type), pointer :: segment => NULL()
-  real :: c1_0 = 1.0, c0_0 = 0.0, c0_5 = 0.5, c2_0 = 2.0
+  real, parameter :: c1_0 = 1.0, c0_0 = 0.0, c0_5 = 0.5, c2_0 = 2.0
 #ifdef GPTL
   integer :: gptl_ret, gptl_handle = 0
 #endif
@@ -2413,7 +2413,7 @@ subroutine PPM_limit_pos(h_in, h_L, h_R, h_min, G, iis, iie, jis, jie)
   real    :: curv, dh, scale
   character(len=256) :: mesg
   integer :: i,j
-  real :: c3_0 = 3.0, c2_0 = 2.0, c12_0 = 12.0, c0_0 = 0.0
+  real, parameter :: c3_0 = 3.0, c2_0 = 2.0, c12_0 = 12.0, c0_0 = 0.0
 #ifdef GPTL
   integer :: gptl_ret, gptl_handle = 0
 #endif
@@ -2462,7 +2462,7 @@ subroutine PPM_limit_CW84(h_in, h_L, h_R, G, iis, iie, jis, jie)
   real    :: h_i, RLdiff, RLdiff2, RLmean, FunFac
   character(len=256) :: mesg
   integer :: i,j
-  real :: c0_0 = 0.0, c0_5 = 0.5, c6_0 = 6.0, c2_0 = 2.0, c3_0 = 3.0
+  real, parameter :: c0_0 = 0.0, c0_5 = 0.5, c6_0 = 6.0, c2_0 = 2.0, c3_0 = 3.0
 #ifdef GPTL
   integer :: gptl_ret, gptl_handle = 0
 #endif
